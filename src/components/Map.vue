@@ -112,18 +112,13 @@ function initMap() {
           map: texture,
           side: THREE.DoubleSide
         })
-        const shapeGeometry = new THREE.ShapeGeometry(shape)
-        const shapeMesh = new THREE.Mesh(shapeGeometry, faceMaterial)
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
-        // const mapGeometry = new THREE.ShapeGeometry(shape);
-        // let mapMesh = new THREE.Mesh(mapGeometry, new THREE.MeshBasicMaterial({ map: faceMaterial }));
+        assignUVs(geometry)
         const material = new THREE.MeshBasicMaterial({ color: '#d13a34', transparent: true, opacity: 0.6 })
         const mesh = new THREE.Mesh(geometry, [faceMaterial, material])
         const line = new THREE.Line(lineGeometry, lineMaterial)
-        // province.add(mesh)
+        province.add(mesh)
         province.add(line)
-        province.add(shapeMesh)
-        assignUVs(shapeGeometry)
       })
     })
     province.properties = elem.properties
@@ -160,71 +155,7 @@ function assignUVs(geometry) {
   geometry.uvsNeedUpdate = true;
 }
 
-function getColRowCanvas(rows, cols, sizeWidth, sizeHeight) {
-  var width = sizeWidth, height = sizeHeight;
-  var fixSize = 16;
-  if (rows.length * fixSize > sizeWidth) {
-    var s = rows.length * fixSize / sizeWidth;
-    width = rows.length * fixSize;
-    height = sizeHeight * s;
-  }
-  else if (cols.length * fixSize > sizeHeight) {
-    var s = cols.length * fixSize / sizeHeight;
-    width = sizeWidth * s;
-    height = cols.length * fixSize;
-  }
 
-  var canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-
-  var rowNumber = rows.length + 1;
-  var colNumber = cols.length + 1;
-  var rowStep = height / rows.length;
-  var colStep = width / cols.length;
-  //background
-  var ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fefefe';
-  ctx.fillRect(0, 0, width, height);
-
-  var fontSize = parseInt(Math.min(rowStep, colStep) * 0.5)
-  ctx.fillStyle = '#2891FF';
-  ctx.font = fontSize + "px Arial";
-
-  //rows
-  ctx.beginPath();
-  for (var i = 0; i < rowNumber; i++) {
-    ctx.fillText(rows[i], 0, (i * rowStep) + rowStep * 0.8);
-    ctx.moveTo(0, i * rowStep);
-    ctx.lineTo(width, i * rowStep);
-  }
-  //columns
-  for (var j = 0; j < colNumber; j++) {
-    ctx.fillText(cols[j], j * colStep + colStep * 0.1, rowStep * 0.4);
-    ctx.moveTo(j * colStep, 0);
-    ctx.lineTo(j * colStep, height);
-  }
-  ctx.stroke();
-  return canvas;
-}
-
-
-function getColRowMaterial(mesh) {
-  var geometry = mesh.geometry;
-  assignUVs(geometry);
-  var area = mesh.userData.area;
-  geometry.computeBoundingBox();
-  var canvas = getColRowCanvas(area.rows, area.cols, geometry.boundingBox.size().x, geometry.boundingBox.size().y);
-  var texture = new THREE.CanvasTexture(canvas);
-  // var texture = new THREE.MeshBasicMaterial({
-  //   map: texture,
-  //   side: THREE.DoubleSide
-  // })
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.y = -1;
-  var material = new THREE.MeshPhongMaterial({ map: texture, side: THREE.DoubleSide });
-  mesh.material = material;
-}
 
 function animate() {
   requestAnimationFrame(animate)
