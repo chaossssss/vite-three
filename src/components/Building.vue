@@ -19,12 +19,13 @@ var camera = null
 var renderer = null
 const textureLoader = new THREE.TextureLoader()
 const stats = new Stats()
-
+let composer, effectFXAA, outlinePass, renderPass;
 var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
 const group = new THREE.Group()
 onMounted(() => {
   init()
+  initEffectComposer()
   document.addEventListener('click', onMouseDblclick);
   animate()
 })
@@ -91,7 +92,7 @@ function init() {
   group.add(cube)
   let boxGeometry2 = boxGeometry.clone()
   const cube2 = new THREE.Mesh(boxGeometry2, geometryMaterial2)
-  cube2.position.set(0, 12, 0)
+  cube2.position.set(0, 15, 0)
   // cube2.name = 'second'
   group.add(cube2)
   group.name = 'buildingsGroup'
@@ -141,6 +142,7 @@ function onMouseDblclick(event) {
     for (var i = 0; i < intersects.length; i++) {
       if (intersects[i].object.name === 'first') {
         intersects[i].object.material.color.set(0xcceeff);
+        outlinePass.selectedObjects = [intersects[i].object];
       }
     }
   } else {
@@ -148,11 +150,31 @@ function onMouseDblclick(event) {
   }
 }
 
+function initEffectComposer() {
+  composer = new EffectComposer(renderer);
+
+  renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
+
+  outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+  composer.addPass(outlinePass);
+
+  outlinePass.edgeStrength = Number(5);//边缘长度
+  outlinePass.edgeGlow = Number(1);//边缘辉光
+  outlinePass.edgeThickness = Number(3.6);//边缘厚度 值越小越明显
+  outlinePass.pulsePeriod = Number(2.9); //一闪一闪周期
+  outlinePass.visibleEdgeColor.set(0xffff00);//没有被遮挡的outline的颜色
+  outlinePass.hiddenEdgeColor.set(0xff0000);//被遮挡的outline的颜色
+
+}
 
 function animate() {
   requestAnimationFrame(animate)
   stats.update()
-  renderer.render(scene, camera)
+  // if (composer) {
+  composer.render()
+  // }
+  // renderer.render(scene, camera)
 }
 
 </script>
