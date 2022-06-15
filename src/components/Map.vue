@@ -6,15 +6,22 @@ import { ref, reactive, onMounted } from 'vue'
 import * as d3geo from "d3-geo";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import Stats from 'three/examples/js/libs/stats.min.js'
 import NANHU from '@/utils/nanhu.json'
-let scene = null
-let camera = null
-let renderer = null
-let map = null
-let textureLoader = new THREE.TextureLoader()
-
+var scene = null
+var camera = null
+var renderer = null
+var map = null
+const textureLoader = new THREE.TextureLoader()
+const stats = new Stats()
+const clock = new THREE.Clock()
+var time = { value: 0 }
+var startTime = { value: 0 }
+var startLength = { value: 2 }
 onMounted(() => {
   init()
+  createRadar()
+  initStats()
   initMap()
   animate()
 })
@@ -82,12 +89,7 @@ function init() {
 
 function initMap() {
   const projection = d3geo.geoMercator().center([120.782952, 30.747738]).scale(10000).translate([0, 0])
-  let texture = textureLoader.load(new URL("../assets/map2.jpg", import.meta.url).href)
-  // texture.wrapS = THREE.RepeatWrapping
-  // texture.wrapT = THREE.RepeatWrapping
-  // uv两个方向纹理重复数量
-  // texture.repeat.set(0.002, 0.002)
-  // texture.repeat.set(1, 1)
+  let texture = textureLoader.load(new URL("../assets/map.jpg", import.meta.url).href)
   NANHU.features.forEach(elem => {
     const province = new THREE.Object3D()
     const coordinates = elem.geometry.coordinates
@@ -115,7 +117,7 @@ function initMap() {
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
         assignUVs(geometry)
         const material = new THREE.MeshBasicMaterial({ color: '#d13a34', transparent: true, opacity: 0.6 })
-        const mesh = new THREE.Mesh(geometry, [faceMaterial, material])
+        const mesh = new THREE.Mesh(geometry, [faceMaterial, material, material])
         const line = new THREE.Line(lineGeometry, lineMaterial)
         province.add(mesh)
         province.add(line)
@@ -128,10 +130,13 @@ function initMap() {
     }
     province.rotation.x = -Math.PI / 2
     province.position.set(-15, 0, -15)
-    // province.center()
     map.add(province)
   })
   scene.add(map)
+}
+
+function initStats() {
+  document.body.appendChild(stats.dom)
 }
 
 function assignUVs(geometry) {
@@ -155,10 +160,121 @@ function assignUVs(geometry) {
   geometry.uvsNeedUpdate = true;
 }
 
+function createRadar() {
+  // 定义雷达参数  
+  const radarData = {
+    position: {
+      x: 0,
+      y: 20,
+      z: 0
+    },
+    radius: 240,
+    color: '#f005f0',
+    opacity: 0.5,
+    speed: 300,
+    followWidth: 220,
+  }
+
+  // 创建几何体
+  const circleGeometry = new THREE.CircleGeometry(radarData.radius, 1000)
+  const rotateMatrix = new THREE.Matrix4().makeRotationX(-Math.PI / 180 * 90)
+  circleGeometry.applyMatrix4(rotateMatrix)
+
+  // 创建材质
+  const material = new THREE.MeshPhongMaterial({
+    color: radarData.color,
+    opacity: radarData.opacity,
+    transparent: true,
+  })
+  const radar = new THREE.Mesh(circleGeometry, material)
+  radar.name = 'radar'
+  const { x, y, z } = radarData.position
+  radar.position.set(x, y, z)
+  radar.updateMatrix()
+  // const cityGroup = this.group.children[0]
+  // cityGroup.add(radar)
+  scene.add(radar)
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, {
+      uSpeed: {
+        value: radarData.speed,
+      },
+      uRadius: {
+        value: radarData.radius
+      },
+      uTime: time,
+      uFollowWidth: {
+        value: radarData.followWidth
+      }
+    })
+    const vertex = `
+        varying vec3 vPosition;
+        void main() {
+          vPosition = position;
+      `
+    shader.vertexShader = shader.vertexShader.replace('void main() {', vertex)
+    const fragment = `
+        uniform float uRadius;     
+        uniform float uTime;            
+        uniform float uSpeed; 
+        uniform float uFollowWidth; 
+        varying vec3 vPosition;
+        float calcAngle(vec3 oFrag){
+          float fragAngle;
+          const vec3 ox = vec3(1,0,0);
+          float dianji = oFrag.x * ox.x + oFrag.z*ox.z;
+          float oFrag_length = length(oFrag); // length是内置函数
+          float ox_length = length(ox); // length是内置函数
+          float yuxian = dianji / (oFrag_length * ox_length);
+          fragAngle = acos(yuxian);
+          fragAngle = degrees(fragAngle);
+          if(oFrag.z > 0.0) {
+            fragAngle = -fragAngle + 360.0;
+          }
+          float scanAngle = uTime * uSpeed - floor(uTime * uSpeed / 360.0) * 360.0;
+          float angle = scanAngle - fragAngle;
+          if(angle < 0.0){
+            angle = angle + 360.0;
+          }
+          return angle;
+        }
+        void main() {
+      `
+    const fragementColor = `
+        // length内置函数，取向量的长度
+        if(length(vPosition) == 0.0 || length(vPosition) > uRadius-2.0){
+          gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+        } else {
+          float angle = calcAngle(vPosition);
+          if(angle < uFollowWidth){
+            // 尾焰区域
+            float opacity =  1.0 - angle / uFollowWidth; 
+            gl_FragColor = vec4( outgoingLight, diffuseColor.a * opacity );  
+          } else {
+            // 其他位置的像素均为透明
+            gl_FragColor = vec4( outgoingLight, 0.0 ); 
+          }
+        }
+      `
+    shader.fragmentShader = shader.fragmentShader.replace('void main() {', fragment)
+    shader.fragmentShader = shader.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', fragementColor)
+  }
+}
+
+function updateData() {
+  const dt = clock.getDelta()
+  time.value += dt
+  startTime.value += dt
+  if (startTime.value > startLength.value) {
+    startTime.value = startLength.value
+  }
+}
 
 
 function animate() {
   requestAnimationFrame(animate)
+  stats.update()
+  updateData()
   renderer.render(scene, camera)
 }
 </script>
