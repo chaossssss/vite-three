@@ -240,7 +240,7 @@ function cameraMove() {
 // 添加线条
 function addLines(v0, v3) {
   // 计算向量夹角
-  let angle = v0.angleTo(v3) * 270 / Math.PI / 10; // 0 ~ Math.PI
+  let angle = v0.angleTo(v3) * 180 / Math.PI / 10; // 0 ~ Math.PI
   let aLen = angle * 50,
     hLen = angle * angle * 120;
   let p0 = new THREE.Vector3(0, 0, 0);
