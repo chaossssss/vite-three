@@ -15,23 +15,19 @@ var map = null
 const textureLoader = new THREE.TextureLoader()
 const stats = new Stats()
 const clock = new THREE.Clock()
-var time = { value: 0 }
-var startTime = { value: 0 }
-var startLength = { value: 2 }
 
-
-let ratio = {
+var ratio = {
   value: 0
 }
 
 // 雷达扫描的相关配置数据
 const radarData = [{
   position: {
-    x: -100,
-    y: 0,
+    x: -30,
+    y: 3,
     z: 0
   },
-  radius: 80,
+  radius: 3,
   color: '#ff0062',
   opacity: 0.5,
   angle: Math.PI * 2,
@@ -55,8 +51,10 @@ const radarData = [{
 
 onMounted(() => {
   init()
-  createRadar()
-  // initRadar(radarData)
+  // 创建雷达扫描
+  radarData.forEach(item => {
+    initRadar(item);
+  });
   initStats()
   initMap()
   animate()
@@ -196,115 +194,12 @@ function assignUVs(geometry) {
   geometry.uvsNeedUpdate = true;
 }
 
-function createRadar() {
-  // 定义雷达参数  
-  const radarData = {
-    position: {
-      x: 0,
-      y: 20,
-      z: 0
-    },
-    radius: 2,
-    color: '#f005f0',
-    opacity: 0.5,
-    speed: 300,
-    followWidth: 20,
-  }
 
-  // 创建几何体
-  const circleGeometry = new THREE.CircleGeometry(radarData.radius, 1000)
-  const rotateMatrix = new THREE.Matrix4().makeRotationX(-Math.PI / 180 * 90)
-  circleGeometry.applyMatrix4(rotateMatrix)
-
-  // 创建材质
-  const material = new THREE.MeshPhongMaterial({
-    color: radarData.color,
-    opacity: radarData.opacity,
-    transparent: true,
-  })
-  const radar = new THREE.Mesh(circleGeometry, material)
-  radar.name = 'radar'
-  const { x, y, z } = radarData.position
-  radar.position.set(x, y, z)
-  radar.updateMatrix()
-  // const cityGroup = this.group.children[0]
-  // cityGroup.add(radar)
-  scene.add(radar)
-  material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, {
-      uSpeed: {
-        value: radarData.speed,
-      },
-      uRadius: {
-        value: radarData.radius
-      },
-      uTime: time,
-      uFollowWidth: {
-        value: radarData.followWidth
-      }
-    })
-    const vertex = `
-        varying vec3 vPosition;
-        void main() {
-          vPosition = position;
-      `
-    shader.vertexShader = shader.vertexShader.replace('void main() {', vertex)
-    const fragment = `
-        uniform float uRadius;     
-        uniform float uTime;            
-        uniform float uSpeed; 
-        uniform float uFollowWidth; 
-        varying vec3 vPosition;
-        float calcAngle(vec3 oFrag){
-          float fragAngle;
-          const vec3 ox = vec3(1,0,0);
-          float dianji = oFrag.x * ox.x + oFrag.z*ox.z;
-          float oFrag_length = length(oFrag); // length是内置函数
-          float ox_length = length(ox); // length是内置函数
-          float yuxian = dianji / (oFrag_length * ox_length);
-          fragAngle = acos(yuxian);
-          fragAngle = degrees(fragAngle);
-          if(oFrag.z > 0.0) {
-            fragAngle = -fragAngle + 360.0;
-          }
-          float scanAngle = uTime * uSpeed - floor(uTime * uSpeed / 360.0) * 360.0;
-          float angle = scanAngle - fragAngle;
-          if(angle < 0.0){
-            angle = angle + 360.0;
-          }
-          return angle;
-        }
-        void main() {
-      `
-    const fragementColor = `
-        // length内置函数，取向量的长度
-        if(length(vPosition) == 0.0 || length(vPosition) > uRadius-0.1){  // 最后这个外框
-          gl_FragColor = vec4( outgoingLight, diffuseColor.a );
-        } else {
-          float angle = calcAngle(vPosition);
-          if(angle < uFollowWidth){
-            // 尾焰区域
-            float opacity =  1.0 - angle / uFollowWidth; 
-            gl_FragColor = vec4( outgoingLight, diffuseColor.a * opacity );  
-          } else {
-            // 其他位置的像素均为透明
-            gl_FragColor = vec4( outgoingLight, 0.0 ); 
-          }
-        }
-      `
-    shader.fragmentShader = shader.fragmentShader.replace('void main() {', fragment)
-    shader.fragmentShader = shader.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', fragementColor)
-  }
-}
 
 function updateData() {
   const dt = clock.getDelta()
-  time.value += dt
-  startTime.value += dt
   ratio.value += dt
-  if (startTime.value > startLength.value) {
-    startTime.value = startLength.value
-  }
+
 }
 
 function initRadar(options) {
@@ -352,7 +247,7 @@ function initRadar(options) {
                 float tempOpacity = 0.0;
 
                 // 设置雷达外层圆环的宽度
-                float circleWidth = 5.0;
+                float circleWidth = 0.5;
                 // 如果当前点在外层圆环上， 设置一个透明度
                 if (dist < u_radius && dist > u_radius - circleWidth) {
                     // 做一个虚化渐变效果
@@ -361,7 +256,7 @@ function initRadar(options) {
                 }
 
                 // 设置雷达扫描圈的效果 (-5.0是给外层圆环和内层圆之间设置一点空白间距)
-                if (dist < (u_radius - 5.0)) {
+                if (dist < (u_radius - 0.5)) {
                     tempOpacity = 1.0 - angleT / u_width;
                 }
 
