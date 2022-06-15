@@ -11,7 +11,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass'
-
+import TWEEN from "@tweenjs/tween.js"
 
 
 var scene = null
@@ -19,10 +19,12 @@ var camera = null
 var renderer = null
 const textureLoader = new THREE.TextureLoader()
 const stats = new Stats()
-let composer, effectFXAA, outlinePass, renderPass;
+let composer, effectFXAA, outlinePass, renderPass, controls;
 var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
 const group = new THREE.Group()
+
+
 
 var firstCube = false
 
@@ -50,7 +52,7 @@ function init() {
   renderer.gammaInput = true
   renderer.gammaOutput = true
   document.getElementById("container").appendChild(renderer.domElement)
-  new OrbitControls(camera, renderer.domElement);
+  controls = new OrbitControls(camera, renderer.domElement);
 
 
   // 光源
@@ -143,14 +145,28 @@ function onMouseDblclick(event) {
     console.log(intersects)
     for (var i = 0; i < intersects.length; i++) {
       if (intersects[i].object.name === 'first') {
+        // 随机坐标
+        // var x = Math.round((Math.random() * 100));
+        // var y = Math.round((Math.random() * 100));
+        // var z = 50;
+
+        // var x2 = Math.round((Math.random() * 50));
+        // var y2 = Math.round((Math.random() * 50));
+        // var z2 = 5;
+
+        // var pos = new THREE.Vector3(x, y, z);
+        // var pos2 = new THREE.Vector3(x2, y2, z2);
         if (!firstCube) {
           intersects[i].object.material.color.set(0xcceeff);
           outlinePass.selectedObjects = [intersects[i].object];
           firstCube = true
+          cameraMove()
+          // animateCamera(camera.position, initialCameraPos, controls.target, moveCarmeraPos)
         } else {
           intersects[i].object.material.color.set(0xffeecc);
           outlinePass.selectedObjects = [];
           firstCube = false
+          // animateCamera(camera.position, moveCarmeraPos, controls.target, initialCameraPos)
         }
       }
     }
@@ -158,6 +174,116 @@ function onMouseDblclick(event) {
     console.log('未选中 Mesh!');
   }
 }
+
+// oldP  相机原来的位置
+// oldT  target原来的位置
+// newP  相机新的位置
+// newT  target新的位置
+// callBack  动画结束时的回调函数
+function animateCamera(oldP, oldT, newP, newT, callBack) {
+  var tween = new TWEEN.Tween({
+    x1: oldP.x, // 相机x
+    y1: oldP.y, // 相机y
+    z1: oldP.z, // 相机z
+    x2: oldT.x, // 控制点的中心点x
+    y2: oldT.y, // 控制点的中心点y
+    z2: oldT.z  // 控制点的中心点z
+  });
+  tween.to({
+    x1: newP.x,
+    y1: newP.y,
+    z1: newP.z,
+    x2: newT.x,
+    y2: newT.y,
+    z2: newT.z
+  }, 1000);
+  tween.onUpdate(function (object) {
+    camera.position.x = object.x1;
+    camera.position.y = object.y1;
+    camera.position.z = object.z1;
+    controls.target.x = object.x2;
+    controls.target.y = object.y2;
+    controls.target.z = object.z2;
+    controls.update();
+  })
+  tween.onComplete(function () {
+    controls.enabled = true;
+    callBack && callBack()
+  })
+  tween.easing(TWEEN.Easing.Cubic.InOut);
+  tween.start();
+}
+
+
+
+function cameraMove() {
+  //获取当前camera位置
+  let camPosition = camera.position;         //获取摄像机当前位置
+  let newPosition = new THREE.Vertex(0, 50, 0);     //设置目标位置
+  let curve = addLines(camPosition, newPosition).curve;    //绘制贝塞尔曲线
+  scene.add(addLines(camPosition, newPosition).lineMesh)
+  //取curve的50个点
+  let points = curve.getPoints(50);
+  let index = 0;
+  //摄像机每50毫秒移动一个点的位置
+  let a = setInterval(function () {
+    camera.position.set(points[index].x, points[index].y, points[index].z);
+    // console.log(index);
+    camera.lookAt(new THREE.Vertex(0, 0, 0))
+    index++;
+    if (index > 50) {
+      clearInterval(a);
+    }
+  }, 50);
+}
+
+// 添加线条
+function addLines(v0, v3) {
+  // 计算向量夹角
+  let angle = v0.angleTo(v3) * 270 / Math.PI / 10; // 0 ~ Math.PI
+  let aLen = angle * 50,
+    hLen = angle * angle * 120;
+  let p0 = new THREE.Vector3(0, 0, 0);
+
+  // 开始，结束点
+  // let v0 = groupDots.children[0].position;
+  // let v3 = groupDots.children[1].position;
+
+  // 法线向量
+  let rayLine = new THREE.Ray(p0, getVCenter(v0.clone(), v3.clone()));
+
+  // 顶点坐标
+  let vtop = rayLine.at(hLen / rayLine.at(1).distanceTo(p0));
+
+  // 控制点坐标
+  let v1 = getLenVcetor(v0.clone(), vtop, aLen);
+  let v2 = getLenVcetor(v3.clone(), vtop, aLen);
+
+  // 绘制贝塞尔曲线
+  let curve = new THREE.CubicBezierCurve3(v0, v1, v2, v3);
+  let geo = new THREE.Geometry();
+  geo.vertices = curve.getPoints(50);
+  let mat = new THREE.LineBasicMaterial({ color: 0xff0000 });
+  // let curveMesh = new THREE.Mesh(geo, mat)
+  // scene.add(curveMesh)
+  return {
+    curve: curve,
+    lineMesh: new THREE.Line(geo, mat)
+  };
+}
+
+// 计算v1,v2 的中点
+function getVCenter(v1, v2) {
+  let v = v1.add(v2);
+  return v.divideScalar(2);
+}
+
+// 计算V1，V2向量固定长度的点
+function getLenVcetor(v1, v2, len) {
+  let v1v2Len = v1.distanceTo(v2);
+  return v1.lerp(v2, len / v1v2Len);
+}
+
 
 function initEffectComposer() {
   composer = new EffectComposer(renderer);
@@ -178,6 +304,7 @@ function animate() {
   stats.update()
   // if (composer) {
   composer.render()
+  TWEEN.update()
   // }
   // renderer.render(scene, camera)
 }
