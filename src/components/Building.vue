@@ -23,6 +23,9 @@ let composer, effectFXAA, outlinePass, renderPass;
 var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
 const group = new THREE.Group()
+
+var firstCube = false
+
 onMounted(() => {
   init()
   initEffectComposer()
@@ -132,7 +135,6 @@ function getIntersects(event) {
 function onMouseDblclick(event) {
   //获取raycaster和所有模型相交的数组，其中的元素按照距离排序，越近的越靠前
   let intersects = getIntersects(event);
-  console.log(intersects);
   // console.log(intersects[0].object);
 
   //获取选中最近的Mesh对象
@@ -141,8 +143,15 @@ function onMouseDblclick(event) {
     console.log(intersects)
     for (var i = 0; i < intersects.length; i++) {
       if (intersects[i].object.name === 'first') {
-        intersects[i].object.material.color.set(0xcceeff);
-        outlinePass.selectedObjects = [intersects[i].object];
+        if (!firstCube) {
+          intersects[i].object.material.color.set(0xcceeff);
+          outlinePass.selectedObjects = [intersects[i].object];
+          firstCube = true
+        } else {
+          intersects[i].object.material.color.set(0xffeecc);
+          outlinePass.selectedObjects = [];
+          firstCube = false
+        }
       }
     }
   } else {
@@ -152,20 +161,16 @@ function onMouseDblclick(event) {
 
 function initEffectComposer() {
   composer = new EffectComposer(renderer);
-
   renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
-
   outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
   composer.addPass(outlinePass);
-
   outlinePass.edgeStrength = Number(5);//边缘长度
   outlinePass.edgeGlow = Number(1);//边缘辉光
   outlinePass.edgeThickness = Number(3.6);//边缘厚度 值越小越明显
   outlinePass.pulsePeriod = Number(2.9); //一闪一闪周期
   outlinePass.visibleEdgeColor.set(0xffff00);//没有被遮挡的outline的颜色
   outlinePass.hiddenEdgeColor.set(0xff0000);//被遮挡的outline的颜色
-
 }
 
 function animate() {
