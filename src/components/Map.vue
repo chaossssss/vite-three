@@ -203,72 +203,66 @@ function updateData() {
 }
 
 function initRadar(options) {
-
-
   const vertexShader = `
-            precision mediump float;
-            precision highp int;
+    precision mediump float;
+    precision highp int;
 
-            varying vec2 vPosition;
+    varying vec2 vPosition;
 
-            void main () {
-                vPosition = vec2(position.x, position.y);
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }`;
+    void main () {
+      vPosition = vec2(position.x, position.y);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }`;
   const fragmentShader = `
-            precision mediump float;
-            precision highp int;
+    precision mediump float;
+    precision highp int;
 
-            uniform float uTime;
-            uniform float u_radius;
-            uniform float u_speed;
-            uniform float u_opacity;
-            uniform float u_width;
-            uniform vec3 u_color;
+    uniform float uTime;
+    uniform float u_radius;
+    uniform float u_speed;
+    uniform float u_opacity;
+    uniform float u_width;
+    uniform vec3 u_color;
 
-            varying vec2 vPosition;
-            #define PI 3.14159265359
+    varying vec2 vPosition;
+    #define PI 3.14159265359
 
-            void main () {
-                // 计算当前扫描旋转的弧度值总数
-                float currentRadius = u_speed * uTime;
+    void main () {
+        // 计算当前扫描旋转的弧度值总数
+        float currentRadius = u_speed * uTime;
 
-                // 计算当前像素点与原点连线和x轴构成的夹角的弧度值
-                // atan 接受两个参数（y,x）时 等同于 atan2,返回的是atan(y/x)；
-                // 但比后者更稳定，返回值区间[-PI, PI]
-                float angle = atan(vPosition.y, vPosition.x) + PI;
+        // 计算当前像素点与原点连线和x轴构成的夹角的弧度值
+        // atan 接受两个参数（y,x）时 等同于 atan2,返回的是atan(y/x)；
+        // 但比后者更稳定，返回值区间[-PI, PI]
+        float angle = atan(vPosition.y, vPosition.x) + PI;
 
-                // 计算当前像素低旋转后的弧度值，值固定在[0, PI * 2]之间
-                float angleT = mod(currentRadius + angle, PI * 2.0);
+        // 计算当前像素低旋转后的弧度值，值固定在[0, PI * 2]之间
+        float angleT = mod(currentRadius + angle, PI * 2.0);
 
-                // 计算当前位置距离中心点距离
-                float dist = distance(vec2(0.0, 0.0), vPosition);
-                
-                float tempOpacity = 0.0;
+        // 计算当前位置距离中心点距离
+        float dist = distance(vec2(0.0, 0.0), vPosition);
+        
+        float tempOpacity = 0.0;
 
-                // 设置雷达外层圆环的宽度
-                float circleWidth = 0.5;
-                // 如果当前点在外层圆环上， 设置一个透明度
-                if (dist < u_radius && dist > u_radius - circleWidth) {
-                    // 做一个虚化渐变效果
-                    float pct = smoothstep(u_radius - circleWidth, u_radius, dist);
-                    tempOpacity = sin(pct * PI);
-                }
-
-                // 设置雷达扫描圈的效果 (-5.0是给外层圆环和内层圆之间设置一点空白间距)
-                if (dist < (u_radius - 0.5)) {
-                    tempOpacity = 1.0 - angleT / u_width;
-                }
-
-
-
-                gl_FragColor = vec4(u_color, u_opacity * tempOpacity);
+        // 设置雷达外层圆环的宽度
+        float circleWidth = 0.5;
+        // 如果当前点在外层圆环上， 设置一个透明度
+        if (dist < u_radius && dist > u_radius - circleWidth) {
+            // 做一个虚化渐变效果
+            float pct = smoothstep(u_radius - circleWidth, u_radius, dist);
+            tempOpacity = sin(pct * PI);
         }
-        `;
+
+        // 设置雷达扫描圈的效果 (-5.0是给外层圆环和内层圆之间设置一点空白间距)
+        if (dist < (u_radius - 0.5)) {
+            tempOpacity = 1.0 - angleT / u_width;
+        }
 
 
 
-
+        gl_FragColor = vec4(u_color, u_opacity * tempOpacity);
+    }
+  `;
 
   const {
     position,
