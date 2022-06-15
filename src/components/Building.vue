@@ -12,8 +12,13 @@ var camera = null
 var renderer = null
 const textureLoader = new THREE.TextureLoader()
 const stats = new Stats()
+
+var raycaster = new THREE.Raycaster()
+var mouse = new THREE.Vector2()
+const group = new THREE.Group()
 onMounted(() => {
   init()
+  document.addEventListener('click', onMouseDblclick);
   animate()
 })
 
@@ -76,14 +81,66 @@ function init() {
   cube.receiveShadow = true
   cube.position.set(0, 4, 0)
   cube.name = 'first'
-  scene.add(cube)
+  group.add(cube)
   let boxGeometry2 = boxGeometry.clone()
   const cube2 = new THREE.Mesh(boxGeometry2, geometryMaterial2)
-
   cube2.position.set(0, 12, 0)
   // cube2.name = 'second'
-  scene.add(cube2)
+  group.add(cube2)
+  group.name = 'buildingsGroup'
+  scene.add(group)
 }
+
+//获取与射线相交的对象数组
+function getIntersects(event) {
+  event.preventDefault(); // 阻止默认的点击事件执行, https://developer.mozilla.org/zh-CN/docs/Web/API/Event/preventDefault
+  //console.log("event.clientX:" + event.clientX);
+  //console.log("event.clientY:" + event.clientY);
+
+  //声明 rayCaster 和 mouse 变量
+  let rayCaster = new THREE.Raycaster();
+  let mouse = new THREE.Vector2();
+
+  //通过鼠标点击位置，计算出raycaster所需点的位置，以屏幕为中心点，范围-1到1
+  mouse.x = ((event.clientX - document.body.getBoundingClientRect().left) / document.body.offsetWidth) * 2 - 1;
+  mouse.y = -((event.clientY - document.body.getBoundingClientRect().top) / document.body.offsetHeight) * 2 + 1; //这里为什么是-号，没有就无法点中
+
+  //通过鼠标点击的位置(二维坐标)和当前相机的矩阵计算出射线位置
+  rayCaster.setFromCamera(mouse, camera);
+
+  //获取与射线相交的对象数组， 其中的元素按照距离排序，越近的越靠前。
+  //+true，是对其后代进行查找，这个在这里必须加，因为模型是由很多部分组成的，后代非常多。
+  // console.log(group)
+  let intersects = rayCaster.intersectObjects(scene.children, true);
+
+  //返回选中的对象
+
+  // console.log(intersects)
+
+  return intersects;
+}
+
+//鼠标双击触发的方法
+function onMouseDblclick(event) {
+  //获取raycaster和所有模型相交的数组，其中的元素按照距离排序，越近的越靠前
+  let intersects = getIntersects(event);
+  console.log(intersects);
+  // console.log(intersects[0].object);
+
+  //获取选中最近的Mesh对象
+  //instance坐标是对象，右边是类，判断对象是不是属于这个类的
+  if (intersects.length !== 0) {
+    console.log(intersects)
+    for (var i = 0; i < intersects.length; i++) {
+      if (intersects[i].object.name === 'first') {
+        intersects[i].object.material.color.set(0xcceeff);
+      }
+    }
+  } else {
+    console.log('未选中 Mesh!');
+  }
+}
+
 
 function animate() {
   requestAnimationFrame(animate)
