@@ -23,10 +23,8 @@ let composer, effectFXAA, outlinePass, renderPass, controls;
 var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
 const group = new THREE.Group()
+var selectedObjectsArr = []
 
-
-
-var firstCube = false
 
 onMounted(() => {
   init()
@@ -88,17 +86,23 @@ function init() {
   // 立方体
   const boxGeometry = new THREE.BoxGeometry(8, 8, 20)
   const geometryMaterial = new THREE.MeshPhongMaterial({ color: 0xffeecc })
-  const geometryMaterial2 = new THREE.MeshPhongMaterial({ color: 0xffff00 })
+  const geometryMaterial2 = new THREE.MeshPhongMaterial({ color: 0xffdd00 })
   const cube = new THREE.Mesh(boxGeometry, geometryMaterial)
   cube.castShadow = true
   cube.receiveShadow = true
   cube.position.set(0, 4, 0)
   cube.name = 'first'
+  cube.userData.current = false
+  cube.userData.defaultColor = 0xffeecc
+  cube.userData.currentColor = 0xcceeff
   group.add(cube)
   let boxGeometry2 = boxGeometry.clone()
   const cube2 = new THREE.Mesh(boxGeometry2, geometryMaterial2)
   cube2.position.set(0, 15, 0)
-  // cube2.name = 'second'
+  cube2.userData.current = false
+  cube2.userData.defaultColor = 0xffdd00
+  cube2.userData.currentColor = 0xccffcc
+  cube2.name = 'second'
   group.add(cube2)
   group.name = 'buildingsGroup'
   scene.add(group)
@@ -128,7 +132,7 @@ function getIntersects(event) {
 
   //返回选中的对象
 
-  // console.log(intersects)
+  console.log(intersects)
 
   return intersects;
 }
@@ -138,41 +142,26 @@ function onMouseDblclick(event) {
   //获取raycaster和所有模型相交的数组，其中的元素按照距离排序，越近的越靠前
   let intersects = getIntersects(event);
   // console.log(intersects[0].object);
-
-  //获取选中最近的Mesh对象
-  //instance坐标是对象，右边是类，判断对象是不是属于这个类的
-  if (intersects.length !== 0) {
-    console.log(intersects)
-    for (var i = 0; i < intersects.length; i++) {
-      if (intersects[i].object.name === 'first') {
-        // 随机坐标
-        // var x = Math.round((Math.random() * 100));
-        // var y = Math.round((Math.random() * 100));
-        // var z = 50;
-
-        // var x2 = Math.round((Math.random() * 50));
-        // var y2 = Math.round((Math.random() * 50));
-        // var z2 = 5;
-
-        // var pos = new THREE.Vector3(x, y, z);
-        // var pos2 = new THREE.Vector3(x2, y2, z2);
-        if (!firstCube) {
-          intersects[i].object.material.color.set(0xcceeff);
-          outlinePass.selectedObjects = [intersects[i].object];
-          firstCube = true
-          cameraMove()
-          // animateCamera(camera.position, initialCameraPos, controls.target, moveCarmeraPos)
-        } else {
-          intersects[i].object.material.color.set(0xffeecc);
-          outlinePass.selectedObjects = [];
-          firstCube = false
-          // animateCamera(camera.position, moveCarmeraPos, controls.target, initialCameraPos)
-        }
+  intersects[0].object.traverse(function (child) {
+    console.log(child)
+    if (child.type === 'Mesh' && (child.name === 'first' || child.name === 'second')) {
+      if (!child.userData.current) {
+        child.material.color.set(child.userData.currentColor);
+        selectedObjectsArr.push(child)
+        outlinePass.selectedObjects = selectedObjectsArr
+        child.userData.current = true
+        cameraMove()
+      } else {
+        let selectedIndex = selectedObjectsArr.findIndex(item => {
+          return item.name === child.name
+        })
+        selectedObjectsArr.splice(selectedIndex, 1)
+        child.material.color.set(child.userData.defaultColor);
+        outlinePass.selectedObjects = selectedObjectsArr;
+        child.userData.current = false
       }
     }
-  } else {
-    console.log('未选中 Mesh!');
-  }
+  })
 }
 
 // oldP  相机原来的位置
@@ -221,7 +210,7 @@ function cameraMove() {
   let camPosition = camera.position;         //获取摄像机当前位置
   let newPosition = new THREE.Vertex(0, 50, 0);     //设置目标位置
   let curve = addLines(camPosition, newPosition).curve;    //绘制贝塞尔曲线
-  scene.add(addLines(camPosition, newPosition).lineMesh)
+  scene.add(addLines(camPosition, newPosition).lineMesh)   // 显示轨迹
   //取curve的50个点
   let points = curve.getPoints(50);
   let index = 0;
