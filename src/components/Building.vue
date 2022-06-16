@@ -115,6 +115,47 @@ function init() {
   cube2.userData.defaultColor = 0xffdd00
   cube2.userData.currentColor = 0xccffcc
   cube2.name = 'second'
+
+
+
+  // 建筑面材质
+  // let buildMaterial = new THREE.MeshBasicMaterial({
+  //   color: "#009EFF",     // 颜色
+  //   transparent: true,    // 是否开启使用透明度
+  //   opacity: 0.25,        // 透明度
+  //   depthWrite: false,    // 关闭深度写入 透视效果
+  //   side: THREE.DoubleSide, // 双面显示
+  // });
+
+  let buildMaterial = new THREE.MeshPhongMaterial({
+    color: 0x009EFF,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: true,
+    ambientLight: 0x2a3766
+  })
+
+
+  // 建筑线材质
+  let lineMaterial = new THREE.LineBasicMaterial({
+    color: "#36BCFF",
+    transparent: true,
+    opacity: 0.4,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  })
+  let boxGeometry3 = boxGeometry.clone()
+  let cube3 = new THREE.Mesh(boxGeometry3, buildMaterial)
+  cube3.position.set(0, 30, 0)
+  let cubeEdges = new THREE.EdgesGeometry(boxGeometry3)
+  let lineCube = new THREE.LineSegments(cubeEdges, lineMaterial)
+  lineCube.position.set(0, 30, 0)
+  group.add(cube3)
+  group.add(lineCube)
+
+
+
+
   group.add(cube2)
   group.name = 'buildingsGroup'
   scene.add(group)
