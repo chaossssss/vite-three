@@ -1,7 +1,9 @@
 <template>
+  <BuildingControl @onSubmit="getData" />
   <div id="container" class="container"></div>
 </template>
 <script setup>
+import BuildingControl from './BuildingControl.vue';
 import { ref, reactive, onMounted } from 'vue'
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -32,6 +34,16 @@ onMounted(() => {
   document.addEventListener('click', onMouseDblclick);
   animate()
 })
+
+const getData = (val) => {
+  if (val.floor === 1) {
+    group.children[0].material.visible = true
+    group.children[1].material.visible = false
+  } else if (val.floor === 2) {
+    group.children[0].material.visible = false
+    group.children[1].material.visible = true
+  }
+}
 
 function init() {
   scene = new THREE.Scene()
