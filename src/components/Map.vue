@@ -5,9 +5,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import * as d3geo from "d3-geo";
 import * as THREE from "three";
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from 'three/examples/js/libs/stats.min.js'
 import NANHU from '@/utils/nanhu.json'
+
 var scene = null
 var camera = null
 var renderer = null
@@ -57,8 +61,19 @@ onMounted(() => {
   });
   initStats()
   initMap()
+  loaderCarModel()
   animate()
 })
+
+function loaderCarModel() {
+  let fbxLoader = new FBXLoader()
+  fbxLoader.load('/model/1.fbx', function (object) {
+    object.position.set(0, 0, 0)
+    object.scale.set(0.1, 0.1, 0.1)
+    scene.add(object)
+  })
+}
+
 
 function init() {
   scene = new THREE.Scene()
