@@ -27,6 +27,32 @@ var scanConfig = {
   during: 3,
 }
 
+const bloomParams = {
+  exposure: 1,
+  bloomThreshold: 0,
+  bloomStrength: 1,
+  bloomRadius: 0.2,
+};
+
+const bloomVertext = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+
+const bloomFragment = `
+uniform sampler2D baseTexture;
+uniform sampler2D bloomTexture;
+varying vec2 vUv;
+void main() {
+  gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );
+}
+`;
+
+
+
 
 var ratio = {
   value: 0
@@ -136,7 +162,7 @@ function scanCar() {
       //模型的基础颜色
       vec4 distColor=uModelColor;
       // 流动范围当前点z的高度加上流动线的高度
-      float topY = vPosition.y +0.02;
+      float topY = vPosition.y +0.04;
       if (height > vPosition.y && height < topY) {
       // 颜色渐变 
         distColor = uFlowColor; 
@@ -166,7 +192,7 @@ function scanCar() {
   scanConfig.start = boundingBox.min.y + 0.1 || 0
   scanConfig.end = boundingBox.max.y - 0.1 || 0
   scanConfig.value = scanConfig.start
-  cube.position.set(0, 10, 0)
+  cube.position.set(5, 10, 5)
   scene.add(cube)
 
 }
@@ -174,7 +200,7 @@ function scanCar() {
 function calcHeight() {
   let length = scanConfig.end - scanConfig.start;
   // 扫描动态效果实现
-  scanConfig.value += length / scanConfig.during / 100;
+  scanConfig.value += length / scanConfig.during / 60;
   if (scanConfig.value >= scanConfig.end) {
     scanConfig.value = scanConfig.start;
   }
