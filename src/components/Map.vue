@@ -20,6 +20,14 @@ const textureLoader = new THREE.TextureLoader()
 const stats = new Stats()
 const clock = new THREE.Clock()
 
+var scanConfig = {
+  value: 1.0,
+  start: 0,
+  end: 0,
+  during: 3,
+}
+
+
 var ratio = {
   value: 0
 }
@@ -59,6 +67,7 @@ onMounted(() => {
   radarData.forEach(item => {
     initRadar(item);
   });
+  scanCar()
   initStats()
   initMap()
   loaderCarModel()
@@ -68,12 +77,108 @@ onMounted(() => {
 function loaderCarModel() {
   let fbxLoader = new FBXLoader()
   fbxLoader.load('/model/1.fbx', function (object) {
-    object.position.set(0, 0, 0)
-    object.scale.set(0.1, 0.1, 0.1)
-    scene.add(object)
+    let carGroup = new THREE.Group
+    object.traverse((obj) => {
+      if (obj.isMesh) {
+        carGroup.add(_renderFrameMesh(obj))
+
+
+        let carMaterial = new THREE.MeshPhongMaterial({
+          color: 0x009EFF,
+          transparent: true,
+          opacity: 0.5,
+          depthWrite: true,
+          ambientLight: 0x2a3766
+        })
+        let meshed = new THREE.Mesh(obj.geometry, carMaterial)
+        carGroup.add(meshed)
+
+      }
+    })
+    carGroup.position.set(0, 3, 0)
+    carGroup.rotateX(270 * Math.PI / 180)
+    scene.add(carGroup)
+    // object.position.set(0, 0, 0)
+    // object.scale.set(0.1, 0.1, 0.1)
+    // scene.add(object)
   })
 }
 
+function _renderFrameMesh(obj) {
+  const edges = new THREE.EdgesGeometry(obj.geometry)
+  let color = new THREE.Color(0.1, 0.3, 1)
+  let lineBasicMaterial = new THREE.LineBasicMaterial({
+    color: color,
+    side: THREE.FrontSide,
+    linecap: 'round',
+    linejoin: 'round'
+  })
+  let line = new THREE.LineSegments(edges, lineBasicMaterial)
+  return line
+}
+
+function scanCar() {
+  const uperVertext = `
+    varying vec3 vPosition;
+    void main()
+    {
+      vPosition = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1 );
+    }`;
+
+  const uperFragment = `
+    varying vec3 vPosition;
+      uniform float height;
+      uniform vec4 uFlowColor;
+      uniform vec4 uModelColor;
+    void main()
+    {
+      //模型的基础颜色
+      vec4 distColor=uModelColor;
+      // 流动范围当前点z的高度加上流动线的高度
+      float topY = vPosition.y +0.02;
+      if (height > vPosition.y && height < topY) {
+      // 颜色渐变 
+        distColor = uFlowColor; 
+    }
+      gl_FragColor = distColor;
+    }`;
+
+  const boxGeometry = new THREE.BoxGeometry(10, 10, 10)
+  let shaderMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    side: THREE.DoubleSide,
+    uniforms: {
+      height: scanConfig,
+      uFlowColor: {
+        value: new THREE.Vector4(0.0, 1.0, 1.0, 1.0)
+      },
+      uModelColor: {
+        value: new THREE.Vector4(0.0, 0.0, 0.0, 0.0)
+      }
+    },
+    vertexShader: uperVertext,
+    fragmentShader: uperFragment,
+  })
+  let cube = new THREE.Mesh(boxGeometry, shaderMaterial)
+  cube.geometry.computeBoundingBox()
+  let boundingBox = cube.geometry.boundingBox
+  scanConfig.start = boundingBox.min.y + 0.1 || 0
+  scanConfig.end = boundingBox.max.y - 0.1 || 0
+  scanConfig.value = scanConfig.start
+  cube.position.set(0, 10, 0)
+  scene.add(cube)
+
+}
+
+function calcHeight() {
+  let length = scanConfig.end - scanConfig.start;
+  // 扫描动态效果实现
+  scanConfig.value += length / scanConfig.during / 100;
+  if (scanConfig.value >= scanConfig.end) {
+    scanConfig.value = scanConfig.start;
+  }
+}
 
 function init() {
   scene = new THREE.Scene()
@@ -328,6 +433,7 @@ function animate() {
   requestAnimationFrame(animate)
   stats.update()
   updateData()
+  calcHeight()
   renderer.render(scene, camera)
 }
 </script>
