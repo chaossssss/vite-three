@@ -9,6 +9,12 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
+// import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+
 import Stats from 'three/examples/js/libs/stats.min.js'
 import NANHU from '@/utils/nanhu.json'
 
@@ -19,6 +25,16 @@ var map = null
 const textureLoader = new THREE.TextureLoader()
 const stats = new Stats()
 const clock = new THREE.Clock()
+var composer = null
+var renderPass = null
+
+// 辉光
+var bloomComposer = null
+// var ENTIRE_SCENE = 0, BLOOM_SCENE = 1
+// var bloomLayer = new THREE.Layers()
+// bloomLayer.set(BLOOM_SCENE)
+// var finalComposer = null
+
 
 var scanConfig = {
   value: 1.0,
@@ -140,8 +156,26 @@ function _renderFrameMesh(obj) {
     linejoin: 'round'
   })
   let line = new THREE.LineSegments(edges, lineBasicMaterial)
+  // line.layers.toggle(BLOOM_SCENE)
   return line
 }
+
+// 将材质转为黑色材质
+function darkenNonBloomed(obj) {
+  if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+    materials[obj.uuid] = obj.material;
+    obj.material = darkMaterial;
+  }
+}
+
+// 还原材质
+function restoreMaterial(obj) {
+  if (materials[obj.uuid]) {
+    obj.material = materials[obj.uuid];
+    delete materials[obj.uuid];
+  }
+}
+
 
 function scanCar() {
   const uperVertext = `
@@ -187,6 +221,8 @@ function scanCar() {
     fragmentShader: uperFragment,
   })
   let cube = new THREE.Mesh(boxGeometry, shaderMaterial)
+  // cube.layers.set(BLOOM_SCENE)
+
   cube.geometry.computeBoundingBox()
   let boundingBox = cube.geometry.boundingBox
   scanConfig.start = boundingBox.min.y + 0.1 || 0
@@ -206,6 +242,44 @@ function calcHeight() {
   }
 }
 
+function renderBloom() {
+  // 添加效果合成器
+  bloomComposer = new EffectComposer(renderer);
+  bloomComposer.renderToScreen = false;
+  // 添加基本的渲染通道
+  // const renderPass = new RenderPass(scene, camera);
+
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight)
+  )
+  bloomPass.threshold = bloomParams.bloomThreshold;
+  bloomPass.strength = bloomParams.bloomStrength;
+  bloomPass.radius = bloomParams.bloomRadius;
+  bloomComposer.addPass(renderPass);
+  // 把通道加入到组合器
+  bloomComposer.addPass(bloomPass);
+  const finalPass = new ShaderPass(
+    new THREE.ShaderMaterial({
+      uniforms: {
+        baseTexture: { value: null },
+        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+      },
+      vertexShader: bloomVertext,
+      fragmentShader: bloomFragment,
+      defines: {},
+    }),
+    'baseTexture'
+  );
+  finalPass.needsSwap = true;
+  // 初始化实际效果合成器
+  finalComposer = new EffectComposer(renderer);
+
+  finalComposer.addPass(renderPass);
+  finalComposer.addPass(finalPass);
+}
+
+
+
 function init() {
   scene = new THREE.Scene()
   camera = new THREE.PerspectiveCamera(45,
@@ -221,8 +295,19 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  renderer.gammaInput = true
-  renderer.gammaOutput = true
+  // renderer.gammaInput = true
+  // renderer.gammaOutput = true
+  composer = new EffectComposer(renderer)
+  renderPass = new RenderPass(scene, camera)
+  composer.addPass(renderPass)
+
+  // renderBloom()
+
+  // let fxaaShaderPass = new ShaderPass(FXAAShader)
+  // const pixelRatio = renderer.getPixelRatio();
+  // fxaaShaderPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight)
+  // fxaaShaderPass.renderToScreen = true
+  // composer.addPass(fxaaShaderPass)
   document.getElementById("container").appendChild(renderer.domElement)
   new OrbitControls(camera, renderer.domElement);
 
@@ -456,11 +541,13 @@ function initRadar(options) {
 }
 
 function animate() {
+  let delta = clock.getDelta()
   requestAnimationFrame(animate)
   stats.update()
   updateData()
   calcHeight()
-  renderer.render(scene, camera)
+  // renderer.render(scene, camera)
+  composer.render(delta)
 }
 </script>
 <style lang="less" scoped>
