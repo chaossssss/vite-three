@@ -13,7 +13,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
-// import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
 
 import Stats from 'three/examples/js/libs/stats.min.js'
 import NANHU from '@/utils/nanhu.json'
@@ -34,7 +34,8 @@ var bloomComposer = null
 // var bloomLayer = new THREE.Layers()
 // bloomLayer.set(BLOOM_SCENE)
 // var finalComposer = null
-
+// const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
+// const materials = {};
 
 var scanConfig = {
   value: 1.0,
@@ -243,26 +244,20 @@ function calcHeight() {
 }
 
 function renderBloom() {
-  // 添加效果合成器
-  bloomComposer = new EffectComposer(renderer);
-  bloomComposer.renderToScreen = false;
-  // 添加基本的渲染通道
-  // const renderPass = new RenderPass(scene, camera);
-
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight)
   )
   bloomPass.threshold = bloomParams.bloomThreshold;
   bloomPass.strength = bloomParams.bloomStrength;
   bloomPass.radius = bloomParams.bloomRadius;
-  bloomComposer.addPass(renderPass);
+  composer.addPass(renderPass);
   // 把通道加入到组合器
-  bloomComposer.addPass(bloomPass);
+  composer.addPass(bloomPass);
   const finalPass = new ShaderPass(
     new THREE.ShaderMaterial({
       uniforms: {
         baseTexture: { value: null },
-        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+        bloomTexture: { value: composer.renderTarget2.texture },
       },
       vertexShader: bloomVertext,
       fragmentShader: bloomFragment,
