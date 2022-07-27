@@ -30,12 +30,12 @@ var renderPass = null
 
 // 辉光
 var bloomComposer = null
-// var ENTIRE_SCENE = 0, BLOOM_SCENE = 1
-// var bloomLayer = new THREE.Layers()
-// bloomLayer.set(BLOOM_SCENE)
-// var finalComposer = null
-// const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
-// const materials = {};
+var ENTIRE_SCENE = 0, BLOOM_SCENE = 1
+var bloomLayer = new THREE.Layers()
+bloomLayer.set(BLOOM_SCENE)
+var finalComposer = null
+const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
+const materials = {};
 
 var scanConfig = {
   value: 1.0,
@@ -124,18 +124,15 @@ function loaderCarModel() {
     object.traverse((obj) => {
       if (obj.isMesh) {
         carGroup.add(_renderFrameMesh(obj))
-
-
         let carMaterial = new THREE.MeshPhongMaterial({
           color: 0x009EFF,
           transparent: true,
           opacity: 0.5,
-          depthWrite: true,
-          ambientLight: 0x2a3766
+          depthWrite: false,
         })
         let meshed = new THREE.Mesh(obj.geometry, carMaterial)
+        meshed.layers.set(BLOOM_SCENE)
         carGroup.add(meshed)
-
       }
     })
     carGroup.position.set(0, 3, 0)
@@ -152,7 +149,8 @@ function _renderFrameMesh(obj) {
   let color = new THREE.Color(0.1, 0.3, 1)
   let lineBasicMaterial = new THREE.LineBasicMaterial({
     color: color,
-    side: THREE.FrontSide,
+    transparent: true,
+    side: THREE.DoubleSide,
     linecap: 'round',
     linejoin: 'round'
   })
@@ -222,8 +220,6 @@ function scanCar() {
     fragmentShader: uperFragment,
   })
   let cube = new THREE.Mesh(boxGeometry, shaderMaterial)
-  // cube.layers.set(BLOOM_SCENE)
-
   cube.geometry.computeBoundingBox()
   let boundingBox = cube.geometry.boundingBox
   scanConfig.start = boundingBox.min.y + 0.1 || 0
@@ -294,7 +290,44 @@ function init() {
   // renderer.gammaOutput = true
   composer = new EffectComposer(renderer)
   renderPass = new RenderPass(scene, camera)
+
+
+  // 辉光效果
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    1.5,
+    0.4,
+    0.85
+  );
+  bloomPass.threshold = bloomParams.bloomThreshold;
+  bloomPass.strength = bloomParams.bloomStrength;
+  bloomPass.radius = bloomParams.bloomRadius;
   composer.addPass(renderPass)
+  // composer.renderToScreen = false
+  composer.addPass(bloomPass);
+
+  finalComposer = new EffectComposer(renderer);
+
+  const finalPass = new ShaderPass(
+    new THREE.ShaderMaterial({
+      uniforms: {
+        baseTexture: { value: null },
+        bloomTexture: { value: composer.renderTarget2.texture },
+      },
+      vertexShader: bloomVertext,
+      fragmentShader: bloomFragment,
+      defines: {},
+    }),
+    'baseTexture'
+  );
+
+  finalPass.needsSwap = true;
+  finalComposer.addPass(renderPass);
+  finalComposer.addPass(finalPass);
+
+
+
+
 
   // renderBloom()
 
@@ -309,10 +342,15 @@ function init() {
 
   // 光源
   const ambientLight = new THREE.AmbientLight(0x444444)
+  ambientLight.layers.enable(0);
+  ambientLight.layers.enable(1);
   scene.add(ambientLight)
-  const pointLight = new THREE.PointLight(0xffffff)
+  const pointLight = new THREE.PointLight(0xeeeeee)
+  // const pointLight = new THREE.PointLight(0xffffff)
   pointLight.castShadow = true
   pointLight.position.set(100, 100, 100)
+  pointLight.layers.enable(0);
+  pointLight.layers.enable(1);
   scene.add(pointLight)
 
   // 平面
@@ -537,12 +575,22 @@ function initRadar(options) {
 
 function animate() {
   let delta = clock.getDelta()
-  requestAnimationFrame(animate)
   stats.update()
   updateData()
   calcHeight()
-  // renderer.render(scene, camera)
-  composer.render(delta)
+  renderer.autoClear = false;
+  renderer.clear();
+
+  camera.layers.set(BLOOM_SCENE);
+  composer.render(delta);
+
+  renderer.clearDepth(); // 清除深度缓存
+
+  camera.layers.set(0);
+  renderer.render(scene, camera);
+  // composer.render(delta)
+  requestAnimationFrame(animate)
+
 }
 </script>
 <style lang="less" scoped>
