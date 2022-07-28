@@ -205,25 +205,49 @@ function setupScene() {
   scene.traverse(disposeMaterial);
   scene.children.length = 0;
 
-  const geometry = new THREE.IcosahedronBufferGeometry(1, 15);
 
-  for (let i = 0; i < 50; i++) {
+  // 源代码
+  // const geometry = new THREE.IcosahedronBufferGeometry(1, 15);
 
-    const color = new THREE.Color();
-    color.setHSL(Math.random(), 0.7, Math.random() * 0.2 + 0.05);
+  // for (let i = 0; i < 50; i++) {
 
-    const material = new THREE.MeshBasicMaterial({ color: color });
-    const sphere = new THREE.Mesh(geometry, material);
-    sphere.position.x = Math.random() * 10 - 5;
-    sphere.position.y = Math.random() * 10 - 5;
-    sphere.position.z = Math.random() * 10 - 5;
-    sphere.position.normalize().multiplyScalar(Math.random() * 4.0 + 2.0);
-    sphere.scale.setScalar(Math.random() * Math.random() + 0.5);
-    scene.add(sphere);
+  //   const color = new THREE.Color();
+  //   color.setHSL(Math.random(), 0.7, Math.random() * 0.2 + 0.05);
 
-    if (Math.random() < 0.25) sphere.layers.enable(BLOOM_SCENE);
+  //   const material = new THREE.MeshBasicMaterial({ color: color });
+  //   const sphere = new THREE.Mesh(geometry, material);
+  //   sphere.position.x = Math.random() * 10 - 5;
+  //   sphere.position.y = Math.random() * 10 - 5;
+  //   sphere.position.z = Math.random() * 10 - 5;
+  //   sphere.position.normalize().multiplyScalar(Math.random() * 4.0 + 2.0);
+  //   sphere.scale.setScalar(Math.random() * Math.random() + 0.5);
+  //   scene.add(sphere);
 
-  }
+  //   if (Math.random() < 0.25) sphere.layers.enable(BLOOM_SCENE);
+
+  // }
+
+
+  const planeGeometry = new THREE.PlaneGeometry(10, 10)
+  const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+  const plane = new THREE.Mesh(planeGeometry, planeMaterial)
+  plane.rotation.x = - Math.PI / 3
+  plane.layers.enable(ENTIRE_SCENE)
+  scene.add(plane)
+
+
+
+
+  // 立方体
+  const boxGeometry = new THREE.BoxGeometry(2, 2, 2)
+  const geometryMaterial = new THREE.MeshBasicMaterial({ color: 0xffeecc })
+  const cube = new THREE.Mesh(boxGeometry, geometryMaterial)
+  cube.position.set(0, 0, 6)
+  cube.layers.enable(BLOOM_SCENE)
+  scene.add(cube)
+
+
+
 
   render();
 
