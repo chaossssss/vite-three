@@ -161,18 +161,46 @@ function _renderFrameMesh(obj) {
 
 // 将材质转为黑色材质
 function darkenNonBloomed(obj) {
-  if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+  // if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+  //   materials[obj.uuid] = obj.material;
+  //   obj.material = darkMaterial;
+  // }
+
+
+  if (obj instanceof THREE.Scene) { // 此处忽略Scene，否则场景背景会被影响
+    materials.scene = obj.background;
+    obj.background = null;
+    return;
+  }
+  if (
+    obj instanceof THREE.Sprite || // 此处忽略Sprite
+    (obj.isMesh && bloomLayer.test(obj.layers) === false) // 判断与辉光是否同层
+  ) {
     materials[obj.uuid] = obj.material;
     obj.material = darkMaterial;
   }
+
 }
 
 // 还原材质
 function restoreMaterial(obj) {
+  // if (materials[obj.uuid]) {
+  //   obj.material = materials[obj.uuid];
+  //   delete materials[obj.uuid];
+  // }
+
+
+  if (obj instanceof THREE.Scene) {
+    obj.background = materials.scene;
+    delete materials.scene;
+    return;
+  }
   if (materials[obj.uuid]) {
     obj.material = materials[obj.uuid];
     delete materials[obj.uuid];
   }
+
+
 }
 
 
@@ -303,7 +331,7 @@ function init() {
   bloomPass.strength = bloomParams.bloomStrength;
   bloomPass.radius = bloomParams.bloomRadius;
   composer.addPass(renderPass)
-  // composer.renderToScreen = false
+  // composer.renderToScreen = true
   composer.addPass(bloomPass);
 
   finalComposer = new EffectComposer(renderer);
@@ -410,6 +438,7 @@ function initMap() {
         }
         const faceMaterial = new THREE.MeshBasicMaterial({
           map: texture,
+          opacity: .4,
           side: THREE.DoubleSide
         })
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
@@ -580,12 +609,12 @@ function animate() {
   calcHeight()
   renderer.autoClear = false;
   renderer.clear();
-
+  // scene.traverse(darkenNonBloomed); // 隐藏不需要辉光的物体
   camera.layers.set(BLOOM_SCENE);
   composer.render(delta);
 
   renderer.clearDepth(); // 清除深度缓存
-
+  // scene.traverse(restoreMaterial); // 还原
   camera.layers.set(0);
   renderer.render(scene, camera);
   // composer.render(delta)
