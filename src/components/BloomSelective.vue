@@ -29,7 +29,7 @@ const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
 const materials = {};
 
 
-var renderer, scene, mouse, raycaster, finalComposer, bloomComposer = null
+var renderer, scene, mouse, raycaster, finalComposer, bloomComposer, camera = null
 
 function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -40,7 +40,7 @@ function init() {
 
   scene = new THREE.Scene();
 
-  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 200);
+  camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 200);
   camera.position.set(0, 0, 20);
   camera.lookAt(0, 0, 0);
 
@@ -111,57 +111,57 @@ function init() {
 
 
 
-const gui = new GUI();
+// const gui = new GUI();
 
-gui.add(params, 'scene', ['Scene with Glow', 'Glow only', 'Scene only']).onChange(function (value) {
+// gui.add(params, 'scene', ['Scene with Glow', 'Glow only', 'Scene only']).onChange(function (value) {
 
-  switch (value) {
+//   switch (value) {
 
-    case 'Scene with Glow':
-      bloomComposer.renderToScreen = false;
-      break;
-    case 'Glow only':
-      bloomComposer.renderToScreen = true;
-      break;
-    case 'Scene only':
-      // nothing to do
-      break;
+//     case 'Scene with Glow':
+//       bloomComposer.renderToScreen = false;
+//       break;
+//     case 'Glow only':
+//       bloomComposer.renderToScreen = true;
+//       break;
+//     case 'Scene only':
+//       // nothing to do
+//       break;
 
-  }
+//   }
 
-  render();
+//   render();
 
-});
+// });
 
-const folder = gui.addFolder('Bloom Parameters');
+// const folder = gui.addFolder('Bloom Parameters');
 
-folder.add(params, 'exposure', 0.1, 2).onChange(function (value) {
+// folder.add(params, 'exposure', 0.1, 2).onChange(function (value) {
 
-  renderer.toneMappingExposure = Math.pow(value, 4.0);
-  render();
+//   renderer.toneMappingExposure = Math.pow(value, 4.0);
+//   render();
 
-});
+// });
 
-folder.add(params, 'bloomThreshold', 0.0, 1.0).onChange(function (value) {
+// folder.add(params, 'bloomThreshold', 0.0, 1.0).onChange(function (value) {
 
-  bloomPass.threshold = Number(value);
-  render();
+//   bloomPass.threshold = Number(value);
+//   render();
 
-});
+// });
 
-folder.add(params, 'bloomStrength', 0.0, 10.0).onChange(function (value) {
+// folder.add(params, 'bloomStrength', 0.0, 10.0).onChange(function (value) {
 
-  bloomPass.strength = Number(value);
-  render();
+//   bloomPass.strength = Number(value);
+//   render();
 
-});
+// });
 
-folder.add(params, 'bloomRadius', 0.0, 1.0).step(0.01).onChange(function (value) {
+// folder.add(params, 'bloomRadius', 0.0, 1.0).step(0.01).onChange(function (value) {
 
-  bloomPass.radius = Number(value);
-  render();
+//   bloomPass.radius = Number(value);
+//   render();
 
-});
+// });
 
 
 function onDocumentMouseClick(event) {
