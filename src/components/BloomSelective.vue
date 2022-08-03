@@ -11,7 +11,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 const ENTIRE_SCENE = 0, BLOOM_SCENE = 1;
 
 const bloomLayer = new THREE.Layers();
@@ -51,6 +51,20 @@ function init() {
   controls.addEventListener('change', render);
 
   scene.add(new THREE.AmbientLight(0x404040));
+
+
+  const pointLight = new THREE.PointLight(0xffffff)
+  pointLight.castShadow = true
+  pointLight.position.set(10, 10, 10)
+  // pointLight.layers.set(0);
+  // pointLight.layers.set(1);
+  scene.add(pointLight)
+  const sphereSize = 1;
+  const pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize);
+  scene.add(pointLightHelper);
+  console.log(222222)
+
+
 
   const renderScene = new RenderPass(scene, camera);
 
@@ -105,7 +119,7 @@ function init() {
   raycaster = new THREE.Raycaster();
 
   mouse = new THREE.Vector2();
-  window.addEventListener('click', onDocumentMouseClick, false);
+  // window.addEventListener('click', onDocumentMouseClick, false);
 }
 
 
@@ -199,6 +213,47 @@ window.onresize = function () {
   render();
 
 };
+
+function loaderCarModel() {
+  let fbxLoader = new FBXLoader()
+  fbxLoader.load('/model/1.fbx', function (object) {
+    let carGroup = new THREE.Group
+    object.traverse((obj) => {
+      if (obj.isMesh) {
+        carGroup.add(_renderFrameMesh(obj))
+        let carMaterial = new THREE.MeshBasicMaterial({
+          color: 0x009EFF,
+          transparent: true,
+          opacity: 0.5,
+          depthWrite: false,
+        })
+        let meshed = new THREE.Mesh(obj.geometry, carMaterial)
+        // meshed.layers.enable(BLOOM_SCENE)
+        carGroup.add(meshed)
+      }
+    })
+    carGroup.position.set(0, 2, 0)
+    carGroup.rotateX(270 * Math.PI / 180)
+    scene.add(carGroup)
+    // object.position.set(0, 0, 0)
+    // object.scale.set(0.1, 0.1, 0.1)
+    // scene.add(object)
+  })
+}
+function _renderFrameMesh(obj) {
+  const edges = new THREE.EdgesGeometry(obj.geometry)
+  let color = new THREE.Color(0.1, 0.3, 1)
+  let lineBasicMaterial = new THREE.LineBasicMaterial({
+    color: color,
+    transparent: true,
+    side: THREE.DoubleSide,
+    linecap: 'round',
+    linejoin: 'round'
+  })
+  let line = new THREE.LineSegments(edges, lineBasicMaterial)
+  line.layers.enable(BLOOM_SCENE)
+  return line
+}
 
 function setupScene() {
 
@@ -328,6 +383,7 @@ function restoreMaterial(obj) {
 
 onMounted(() => {
   init()
+  loaderCarModel()
   setupScene();
 
 })
