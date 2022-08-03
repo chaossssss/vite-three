@@ -42,12 +42,12 @@ function init() {
 
   scene = new THREE.Scene();
   // var textureLoader = new THREE.TextureLoader();
-  // 加载背景图片
+  // // 加载背景图片
   // var texture = textureLoader.load(bgPic);
-  // 纹理对象Texture赋值给场景对象的背景属性.background
+  // // 纹理对象Texture赋值给场景对象的背景属性.background
   // scene.background = texture
 
-  // scene.layers.set(ENTIRE_SCENE);
+  // scene.layers.enable(ENTIRE_SCENE);
 
   camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000000);
   camera.position.set(80, 80, 0);
@@ -362,7 +362,7 @@ function animate() {
 
   // render scene with bloom
   renderBloom(true);
-
+  console.log(scene)
   // render the entire scene, then render bloom scene on top
   finalComposer.render();
 
