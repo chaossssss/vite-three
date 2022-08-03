@@ -13,7 +13,8 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { TextureLoader } from 'three/examples/jsm/loaders/BasisTextureLoader'
+import bgPic from '@/assets/bg.jpg'
+// import { TextureLoader } from 'three/examples/jsm/loaders/BasisTextureLoader'
 const ENTIRE_SCENE = 0, BLOOM_SCENE = 1;
 const bloomLayer = new THREE.Layers();
 bloomLayer.set(BLOOM_SCENE);
@@ -34,13 +35,19 @@ var renderer, scene, mouse, raycaster, finalComposer, bloomComposer, camera = nu
 
 function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
-
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ReinhardToneMapping;
   document.getElementById("container").appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
+  // var textureLoader = new THREE.TextureLoader();
+  // 加载背景图片
+  // var texture = textureLoader.load(bgPic);
+  // 纹理对象Texture赋值给场景对象的背景属性.background
+  // scene.background = texture
+
+  // scene.layers.set(ENTIRE_SCENE);
 
   camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000000);
   camera.position.set(80, 80, 0);
@@ -240,8 +247,8 @@ function loaderCarModel() {
 
 function loadMap() {
   let gltfLoader = new GLTFLoader()
-  gltfLoader.load('/model/map.glb', function(gltf) {
-    gltf.scene.position.set(0,-50,0)
+  gltfLoader.load('/model/map.glb', function (gltf) {
+    gltf.scene.position.set(0, -50, 0)
     gltf.scene.layers.enable(ENTIRE_SCENE)
     scene.add(gltf.scene)
   })
@@ -363,7 +370,6 @@ function animate() {
 
 
 function darkenNonBloomed(obj) {
-
   if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
 
     materials[obj.uuid] = obj.material;
