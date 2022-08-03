@@ -380,6 +380,11 @@ function init() {
   pointLight.layers.enable(0);
   pointLight.layers.enable(1);
   scene.add(pointLight)
+  const sphereSize = 1;
+  const pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize);
+  pointLightHelper.name = "pointLightHelper"
+  scene.add(pointLightHelper)
+  console.log(scene)
 
   // 平面
   const planeGeometry = new THREE.PlaneGeometry(150, 150)

@@ -40,29 +40,30 @@ function init() {
 
   scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 200);
-  camera.position.set(0, 0, 20);
+  camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000);
+  camera.position.set(20, 20, 0);
   camera.lookAt(0, 0, 0);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.maxPolarAngle = Math.PI * 0.5;
-  controls.minDistance = 1;
-  controls.maxDistance = 100;
-  controls.addEventListener('change', render);
+  // controls.maxPolarAngle = Math.PI * 0.5;
+  // controls.minDistance = 1;
+  // controls.maxDistance = 100;
+  // controls.addEventListener('change', render);
 
   scene.add(new THREE.AmbientLight(0x404040));
 
 
+
   const pointLight = new THREE.PointLight(0xffffff)
   pointLight.castShadow = true
-  pointLight.position.set(10, 10, 10)
+  pointLight.position.set(8, 8, 8)
   // pointLight.layers.set(0);
   // pointLight.layers.set(1);
   scene.add(pointLight)
   const sphereSize = 1;
   const pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize);
+  // pointLightHelper.layers.enable(ENTIRE_SCENE)
   scene.add(pointLightHelper);
-  console.log(222222)
 
 
 
@@ -197,22 +198,22 @@ function onDocumentMouseClick(event) {
 
 }
 
-window.onresize = function () {
+// window.onresize = function () {
 
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+//   const width = window.innerWidth;
+//   const height = window.innerHeight;
 
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
+//   camera.aspect = width / height;
+//   camera.updateProjectionMatrix();
 
-  renderer.setSize(width, height);
+//   renderer.setSize(width, height);
 
-  bloomComposer.setSize(width, height);
-  finalComposer.setSize(width, height);
+//   bloomComposer.setSize(width, height);
+//   finalComposer.setSize(width, height);
 
-  render();
+//   render();
 
-};
+// };
 
 function loaderCarModel() {
   let fbxLoader = new FBXLoader()
@@ -221,7 +222,7 @@ function loaderCarModel() {
     object.traverse((obj) => {
       if (obj.isMesh) {
         carGroup.add(_renderFrameMesh(obj))
-        let carMaterial = new THREE.MeshBasicMaterial({
+        let carMaterial = new THREE.MeshPhongMaterial({
           color: 0x009EFF,
           transparent: true,
           opacity: 0.5,
@@ -232,7 +233,7 @@ function loaderCarModel() {
         carGroup.add(meshed)
       }
     })
-    carGroup.position.set(0, 2, 0)
+    carGroup.position.set(0, 0, 0)
     carGroup.rotateX(270 * Math.PI / 180)
     scene.add(carGroup)
     // object.position.set(0, 0, 0)
@@ -258,7 +259,7 @@ function _renderFrameMesh(obj) {
 function setupScene() {
 
   scene.traverse(disposeMaterial);
-  scene.children.length = 0;
+  // scene.children.length = 0;
 
 
   // 源代码
@@ -283,10 +284,10 @@ function setupScene() {
   // }
 
 
-  const planeGeometry = new THREE.PlaneGeometry(10, 10)
+  const planeGeometry = new THREE.PlaneGeometry(30, 30)
   const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
   const plane = new THREE.Mesh(planeGeometry, planeMaterial)
-  plane.rotation.x = - Math.PI / 3
+  plane.rotation.x = - Math.PI / 2
   plane.layers.enable(ENTIRE_SCENE)
   scene.add(plane)
 
@@ -294,17 +295,17 @@ function setupScene() {
 
 
   // 立方体
-  const boxGeometry = new THREE.BoxGeometry(2, 2, 2)
-  const geometryMaterial = new THREE.MeshBasicMaterial({ color: 0xffeecc })
-  const cube = new THREE.Mesh(boxGeometry, geometryMaterial)
-  cube.position.set(0, 0, 6)
-  cube.layers.enable(BLOOM_SCENE)
-  scene.add(cube)
+  // const boxGeometry = new THREE.BoxGeometry(2, 2, 2)
+  // const geometryMaterial = new THREE.MeshBasicMaterial({ color: 0xffeecc })
+  // const cube = new THREE.Mesh(boxGeometry, geometryMaterial)
+  // cube.position.set(0, 0, 6)
+  // cube.layers.enable(BLOOM_SCENE)
+  // scene.add(cube)
+
+  loaderCarModel()
 
 
-
-
-  render();
+  // render();
 
 }
 
@@ -359,6 +360,20 @@ function renderBloom(mask) {
 
 }
 
+
+function animate() {
+
+  requestAnimationFrame(animate);
+
+  // render scene with bloom
+  renderBloom(true);
+
+  // render the entire scene, then render bloom scene on top
+  finalComposer.render();
+
+}
+
+
 function darkenNonBloomed(obj) {
 
   if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
@@ -383,9 +398,9 @@ function restoreMaterial(obj) {
 
 onMounted(() => {
   init()
-  loaderCarModel()
-  setupScene();
 
+  setupScene();
+  animate()
 })
 
 
