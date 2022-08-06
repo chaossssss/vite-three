@@ -32,6 +32,7 @@ const materials = {};
 
 
 var renderer, scene, mouse, raycaster, finalComposer, bloomComposer, camera = null
+var sceneBG, cameraBG = null
 
 function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -41,7 +42,7 @@ function init() {
   document.getElementById("container").appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
-  // var textureLoader = new THREE.TextureLoader();
+  var textureLoader = new THREE.TextureLoader();
   // // 加载背景图片
   // var texture = textureLoader.load(bgPic);
   // // 纹理对象Texture赋值给场景对象的背景属性.background
@@ -50,14 +51,31 @@ function init() {
   // scene.layers.enable(ENTIRE_SCENE);
 
   camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000000);
-  camera.position.set(80, 80, 0);
+  camera.position.set(0, 80, 80);
   camera.lookAt(0, 0, 0);
+
+
+  // 1
+  sceneBG = new THREE.Scene()
+  cameraBG = new THREE.OrthographicCamera(-window.innerWidth, window.innerWidth, window.innerHeight, -window.innerHeight, -10000, 10000);
+  // cameraBG.position.z = 50;
+  cameraBG.position.set(80, 80, 0);
+  var materialColor = new THREE.MeshBasicMaterial({
+    map: textureLoader.load(bgPic),
+    depthTest: false
+  });
+  var bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), materialColor);
+  bgPlane.position.z = -3000;
+  bgPlane.scale.set(window.innerWidth * 2, window.innerHeight * 2, 1);
+  bgPlane.layers.enable(ENTIRE_SCENE)
+
+  sceneBG.add(bgPlane);
 
   const controls = new OrbitControls(camera, renderer.domElement);
 
 
   scene.add(new THREE.AmbientLight(0xffffff));
-
+  sceneBG.add(new THREE.AmbientLight(0xffffff));
 
 
   const pointLight = new THREE.PointLight(0xffffff)
@@ -68,6 +86,8 @@ function init() {
   const pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize);
   scene.add(pointLightHelper);
 
+
+  var bgPass = new RenderPass(sceneBG, cameraBG);
 
 
   const renderScene = new RenderPass(scene, camera);
@@ -117,6 +137,7 @@ function init() {
   finalPass.needsSwap = true;
 
   finalComposer = new EffectComposer(renderer);
+  finalComposer.addPass(bgPass)
   finalComposer.addPass(renderScene);
   finalComposer.addPass(finalPass);
 
@@ -359,10 +380,10 @@ function renderBloom(mask) {
 function animate() {
 
   requestAnimationFrame(animate);
-
+  // renderer.autoClear = false
+  // renderer.clear()
   // render scene with bloom
   renderBloom(true);
-  console.log(scene)
   // render the entire scene, then render bloom scene on top
   finalComposer.render();
 
