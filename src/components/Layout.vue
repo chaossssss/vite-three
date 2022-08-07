@@ -5,12 +5,15 @@
 <script setup>
 import { onMounted } from 'vue';
 import * as THREE from 'three';
-import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
+// import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
+// import { stats } from 'three/examples/libs/stats.min.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+// import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { UnrealBloomPass } from '@/utils/bloom124.js'
+// import { UnrealBloomPass } from '@/utils/UnrealBloomPass.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import bgPic from '@/assets/bg.jpg'
@@ -35,7 +38,27 @@ var renderer, scene, mouse, raycaster, finalComposer, bloomComposer, camera = nu
 var sceneBG, cameraBG = null
 
 function init() {
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  // renderer = new THREE.WebGLRenderer({
+  //   antialias: true,
+  //   precision: "highp",
+  //   alpha: true,
+  //   premultipliedAlpha: false,
+  //   stencil: false,
+  //   preserveDrawingBuffer: true //是否保存绘图缓冲
+  // });
+  // renderer.setClearColor(0xff0000);
+  // renderer.sortObjects = true;
+  // renderer.autoClear = false;
+
+  // renderer.setPixelRatio(window.devicePixelRatio);
+  // renderer.setSize(window.innerWidth, window.innerHeight);
+  // renderer.gammaInput = true;
+  // renderer.gammaOutput = true;
+  // renderer.shadowMap.enabled = true;
+  renderer = new THREE.WebGLRenderer({ antialias: true,    alpha: true,
+    format: THREE.RGBAFormat,
+    logarithmicDepthBuffer: true });
+  // renderer.autoClear = false;
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ReinhardToneMapping;
@@ -384,6 +407,7 @@ function animate() {
   // renderer.clear()
   // render scene with bloom
   renderBloom(true);
+  // renderer.render( sceneBG, cameraBG );
   // render the entire scene, then render bloom scene on top
   finalComposer.render();
 
