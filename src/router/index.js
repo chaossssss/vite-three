@@ -1,33 +1,48 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Map from '@/components/Map.vue'
-import Light from '@/components/Light.vue'
-import Building from '@/components/Building.vue'
-import Bloom from '@/components/Bloom.vue'
-import BloomSelective from '@/components/BloomSelective.vue'
-import Layout from '@/components/Layout.vue'
+import Map from "@/components/Map.vue";
+import Light from "@/components/Light.vue";
+import Building from "@/components/Building.vue";
+import Bloom from "@/components/Bloom.vue";
+import BloomSelective from "@/components/BloomSelective.vue";
+import Layout from "@/components/Layout.vue";
+import Father from "@/components/Father.vue";
+import Cannon from "@/components/Cannon.vue";
 const routes = [
   {
-    path: '/',
-    component: Map
-  }, {
-    path: '/light',
-    component: Light
-  }, {
-    path: '/building',
-    component: Building
-  }, {
-    path: '/bloom',
-    component: Bloom
-  }, {
-    path: '/bloom2',
-    component: BloomSelective
-  }, {
-    path: '/layout',
-    component: Layout
-  }
-]
+    path: "/",
+    component: Map,
+  },
+  {
+    path: "/light",
+    component: Light,
+  },
+  {
+    path: "/building",
+    component: Building,
+  },
+  {
+    path: "/bloom",
+    component: Bloom,
+  },
+  {
+    path: "/bloom2",
+    component: BloomSelective,
+  },
+  {
+    path: "/layout",
+    component: Layout,
+  },
+  {
+    path: "/father",
+    component: Father,
+  },
+  {
+    path: "/cannon",
+    component: Cannon,
+  },
+];
 
 export default createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 });
