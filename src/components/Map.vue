@@ -2,38 +2,39 @@
   <div id="container" class="container"></div>
 </template>
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted } from "vue";
 import * as d3geo from "d3-geo";
 import * as THREE from "three";
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
+import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 
-import Stats from 'three/examples/js/libs/stats.min.js'
-import NANHU from '@/utils/nanhu.json'
+import Stats from "three/examples/js/libs/stats.min.js";
+import NANHU from "@/utils/nanhu.json";
 
-var scene = null
-var camera = null
-var renderer = null
-var map = null
-const textureLoader = new THREE.TextureLoader()
-const stats = new Stats()
-const clock = new THREE.Clock()
-var composer = null
-var renderPass = null
+var scene = null;
+var camera = null;
+var renderer = null;
+var map = null;
+const textureLoader = new THREE.TextureLoader();
+const stats = new Stats();
+const clock = new THREE.Clock();
+var composer = null;
+var renderPass = null;
 
 // 辉光
-var bloomComposer = null
-var ENTIRE_SCENE = 0, BLOOM_SCENE = 1
-var bloomLayer = new THREE.Layers()
-bloomLayer.set(BLOOM_SCENE)
-var finalComposer = null
+var bloomComposer = null;
+var ENTIRE_SCENE = 0,
+  BLOOM_SCENE = 1;
+var bloomLayer = new THREE.Layers();
+bloomLayer.set(BLOOM_SCENE);
+var finalComposer = null;
 const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
 const materials = {};
 
@@ -42,7 +43,7 @@ var scanConfig = {
   start: 0,
   end: 0,
   during: 3,
-}
+};
 
 const bloomParams = {
   exposure: 1,
@@ -68,95 +69,91 @@ void main() {
 }
 `;
 
-
-
-
 var ratio = {
-  value: 0
-}
+  value: 0,
+};
 
 // 雷达扫描的相关配置数据
-const radarData = [{
-  position: {
-    x: -30,
-    y: 3,
-    z: 0
+const radarData = [
+  {
+    position: {
+      x: -30,
+      y: 3,
+      z: 0,
+    },
+    radius: 3,
+    color: "#ff0062",
+    opacity: 0.5,
+    angle: Math.PI * 2,
+    speed: 2,
   },
-  radius: 3,
-  color: '#ff0062',
-  opacity: 0.5,
-  angle: Math.PI * 2,
-  speed: 2
-}, {
-  position: {
-    x: 100,
-    y: 0,
-    z: 10
+  {
+    position: {
+      x: 100,
+      y: 0,
+      z: 10,
+    },
+    radius: 50,
+    color: "#f000f2",
+    opacity: 0.5,
+    angle: Math.PI,
+    speed: 2,
   },
-  radius: 50,
-  color: '#f000f2',
-  opacity: 0.5,
-  angle: Math.PI,
-  speed: 2
-}];
-
-
-
-
+];
 
 onMounted(() => {
-  init()
+  init();
   // 创建雷达扫描
-  radarData.forEach(item => {
+  radarData.forEach((item) => {
     initRadar(item);
   });
-  scanCar()
-  initStats()
-  initMap()
-  loaderCarModel()
-  animate()
-})
+  scanCar();
+  initStats();
+  initMap();
+  loaderCarModel();
+  animate();
+});
 
 function loaderCarModel() {
-  let fbxLoader = new FBXLoader()
-  fbxLoader.load('/model/1.fbx', function (object) {
-    let carGroup = new THREE.Group
+  let fbxLoader = new FBXLoader();
+  fbxLoader.load("/model/1.fbx", function (object) {
+    let carGroup = new THREE.Group();
     object.traverse((obj) => {
       if (obj.isMesh) {
-        carGroup.add(_renderFrameMesh(obj))
+        carGroup.add(_renderFrameMesh(obj));
         let carMaterial = new THREE.MeshPhongMaterial({
-          color: 0x009EFF,
+          color: 0x009eff,
           transparent: true,
           opacity: 0.5,
           depthWrite: false,
-        })
-        let meshed = new THREE.Mesh(obj.geometry, carMaterial)
-        meshed.layers.set(BLOOM_SCENE)
-        carGroup.add(meshed)
+        });
+        let meshed = new THREE.Mesh(obj.geometry, carMaterial);
+        meshed.layers.set(BLOOM_SCENE);
+        carGroup.add(meshed);
       }
-    })
-    carGroup.position.set(0, 3, 0)
-    carGroup.rotateX(270 * Math.PI / 180)
-    scene.add(carGroup)
+    });
+    carGroup.position.set(0, 3, 0);
+    carGroup.rotateX((270 * Math.PI) / 180);
+    scene.add(carGroup);
     // object.position.set(0, 0, 0)
     // object.scale.set(0.1, 0.1, 0.1)
     // scene.add(object)
-  })
+  });
 }
 
 function _renderFrameMesh(obj) {
-  const edges = new THREE.EdgesGeometry(obj.geometry)
-  let color = new THREE.Color(0.1, 0.3, 1)
+  const edges = new THREE.EdgesGeometry(obj.geometry);
+  let color = new THREE.Color(0.1, 0.3, 1);
   let lineBasicMaterial = new THREE.LineBasicMaterial({
     color: color,
     transparent: true,
     side: THREE.DoubleSide,
-    linecap: 'round',
-    linejoin: 'round'
-  })
-  let line = new THREE.LineSegments(edges, lineBasicMaterial)
+    linecap: "round",
+    linejoin: "round",
+  });
+  let line = new THREE.LineSegments(edges, lineBasicMaterial);
   // line.layers.toggle(BLOOM_SCENE)
-  return line
+  return line;
 }
 
 // 将材质转为黑色材质
@@ -166,8 +163,8 @@ function darkenNonBloomed(obj) {
   //   obj.material = darkMaterial;
   // }
 
-
-  if (obj instanceof THREE.Scene) { // 此处忽略Scene，否则场景背景会被影响
+  if (obj instanceof THREE.Scene) {
+    // 此处忽略Scene，否则场景背景会被影响
     materials.scene = obj.background;
     obj.background = null;
     return;
@@ -179,7 +176,6 @@ function darkenNonBloomed(obj) {
     materials[obj.uuid] = obj.material;
     obj.material = darkMaterial;
   }
-
 }
 
 // 还原材质
@@ -188,7 +184,6 @@ function restoreMaterial(obj) {
   //   obj.material = materials[obj.uuid];
   //   delete materials[obj.uuid];
   // }
-
 
   if (obj instanceof THREE.Scene) {
     obj.background = materials.scene;
@@ -199,10 +194,7 @@ function restoreMaterial(obj) {
     obj.material = materials[obj.uuid];
     delete materials[obj.uuid];
   }
-
-
 }
-
 
 function scanCar() {
   const uperVertext = `
@@ -231,31 +223,30 @@ function scanCar() {
       gl_FragColor = distColor;
     }`;
 
-  const boxGeometry = new THREE.BoxGeometry(10, 10, 10)
+  const boxGeometry = new THREE.BoxGeometry(10, 10, 10);
   let shaderMaterial = new THREE.ShaderMaterial({
     transparent: true,
     side: THREE.DoubleSide,
     uniforms: {
       height: scanConfig,
       uFlowColor: {
-        value: new THREE.Vector4(0.0, 1.0, 1.0, 1.0)
+        value: new THREE.Vector4(0.0, 1.0, 1.0, 1.0),
       },
       uModelColor: {
-        value: new THREE.Vector4(0.0, 0.0, 0.0, 0.0)
-      }
+        value: new THREE.Vector4(0.0, 0.0, 0.0, 0.0),
+      },
     },
     vertexShader: uperVertext,
     fragmentShader: uperFragment,
-  })
-  let cube = new THREE.Mesh(boxGeometry, shaderMaterial)
-  cube.geometry.computeBoundingBox()
-  let boundingBox = cube.geometry.boundingBox
-  scanConfig.start = boundingBox.min.y + 0.1 || 0
-  scanConfig.end = boundingBox.max.y - 0.1 || 0
-  scanConfig.value = scanConfig.start
-  cube.position.set(5, 10, 5)
-  scene.add(cube)
-
+  });
+  let cube = new THREE.Mesh(boxGeometry, shaderMaterial);
+  cube.geometry.computeBoundingBox();
+  let boundingBox = cube.geometry.boundingBox;
+  scanConfig.start = boundingBox.min.y + 0.1 || 0;
+  scanConfig.end = boundingBox.max.y - 0.1 || 0;
+  scanConfig.value = scanConfig.start;
+  cube.position.set(5, 10, 5);
+  scene.add(cube);
 }
 
 function calcHeight() {
@@ -270,7 +261,7 @@ function calcHeight() {
 function renderBloom() {
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight)
-  )
+  );
   bloomPass.threshold = bloomParams.bloomThreshold;
   bloomPass.strength = bloomParams.bloomStrength;
   bloomPass.radius = bloomParams.bloomRadius;
@@ -287,7 +278,7 @@ function renderBloom() {
       fragmentShader: bloomFragment,
       defines: {},
     }),
-    'baseTexture'
+    "baseTexture"
   );
   finalPass.needsSwap = true;
   // 初始化实际效果合成器
@@ -297,28 +288,27 @@ function renderBloom() {
   finalComposer.addPass(finalPass);
 }
 
-
-
 function init() {
-  scene = new THREE.Scene()
-  camera = new THREE.PerspectiveCamera(45,
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(
+    45,
     window.innerWidth / window.innerHeight,
     0.1,
-    1000)
-  map = new THREE.Object3D()
-  camera.position.x = 10
-  camera.position.y = 83
-  camera.position.z = 54
-  renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    1000
+  );
+  map = new THREE.Object3D();
+  camera.position.x = 10;
+  camera.position.y = 83;
+  camera.position.z = 54;
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   // renderer.gammaInput = true
   // renderer.gammaOutput = true
-  composer = new EffectComposer(renderer)
-  renderPass = new RenderPass(scene, camera)
-
+  composer = new EffectComposer(renderer);
+  renderPass = new RenderPass(scene, camera);
 
   // 辉光效果
   const bloomPass = new UnrealBloomPass(
@@ -330,7 +320,7 @@ function init() {
   bloomPass.threshold = bloomParams.bloomThreshold;
   bloomPass.strength = bloomParams.bloomStrength;
   bloomPass.radius = bloomParams.bloomRadius;
-  composer.addPass(renderPass)
+  composer.addPass(renderPass);
   // composer.renderToScreen = true
   composer.addPass(bloomPass);
 
@@ -346,16 +336,12 @@ function init() {
       fragmentShader: bloomFragment,
       defines: {},
     }),
-    'baseTexture'
+    "baseTexture"
   );
 
   finalPass.needsSwap = true;
   finalComposer.addPass(renderPass);
   finalComposer.addPass(finalPass);
-
-
-
-
 
   // renderBloom()
 
@@ -364,111 +350,126 @@ function init() {
   // fxaaShaderPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight)
   // fxaaShaderPass.renderToScreen = true
   // composer.addPass(fxaaShaderPass)
-  document.getElementById("container").appendChild(renderer.domElement)
+  document.getElementById("container").appendChild(renderer.domElement);
   new OrbitControls(camera, renderer.domElement);
 
-
   // 光源
-  const ambientLight = new THREE.AmbientLight(0x444444)
+  const ambientLight = new THREE.AmbientLight(0x444444);
   ambientLight.layers.enable(0);
   ambientLight.layers.enable(1);
-  scene.add(ambientLight)
-  const pointLight = new THREE.PointLight(0xeeeeee)
+  scene.add(ambientLight);
+  const pointLight = new THREE.PointLight(0xeeeeee);
   // const pointLight = new THREE.PointLight(0xffffff)
-  pointLight.castShadow = true
-  pointLight.position.set(100, 100, 100)
+  pointLight.castShadow = true;
+  pointLight.position.set(100, 100, 100);
   pointLight.layers.enable(0);
   pointLight.layers.enable(1);
-  scene.add(pointLight)
+  scene.add(pointLight);
   const sphereSize = 1;
   const pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize);
-  pointLightHelper.name = "pointLightHelper"
-  scene.add(pointLightHelper)
-  console.log(scene)
+  pointLightHelper.name = "pointLightHelper";
+  scene.add(pointLightHelper);
+  console.log(scene);
 
   // 平面
-  const planeGeometry = new THREE.PlaneGeometry(150, 150)
-  const planeMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-  const plane = new THREE.Mesh(planeGeometry, planeMaterial)
-  plane.rotation.x = Math.PI / 2
-  plane.receiveShadow = true
+  const planeGeometry = new THREE.PlaneGeometry(150, 150);
+  const planeMaterial = new THREE.MeshPhongMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide,
+  });
+  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+  plane.rotation.x = Math.PI / 2;
+  plane.receiveShadow = true;
 
   // 网格
-  const gridHelper = new THREE.GridHelper(150, 150)
+  const gridHelper = new THREE.GridHelper(150, 150);
 
   // 辅助线
-  const axex = new THREE.AxesHelper(20)
+  const axex = new THREE.AxesHelper(20);
 
   // 组
-  const group1 = new THREE.Group()
-  group1.add(plane)
-  group1.add(axex)
-  group1.add(gridHelper)
-  group1.position.z = -14
-  scene.add(group1)
-
+  const group1 = new THREE.Group();
+  group1.add(plane);
+  group1.add(axex);
+  group1.add(gridHelper);
+  group1.position.z = -14;
+  scene.add(group1);
 
   // 立方体
-  const boxGeometry = new THREE.BoxGeometry(8, 8, 8)
-  const geometryMaterial = new THREE.MeshPhongMaterial({ color: 0xffeecc })
-  const cube = new THREE.Mesh(boxGeometry, geometryMaterial)
-  cube.castShadow = true
-  cube.receiveShadow = true
-  cube.position.set(0, 0, 30)
-  scene.add(cube)
+  const boxGeometry = new THREE.BoxGeometry(8, 8, 8);
+  const geometryMaterial = new THREE.MeshPhongMaterial({ color: 0xffeecc });
+  const cube = new THREE.Mesh(boxGeometry, geometryMaterial);
+  cube.castShadow = true;
+  cube.receiveShadow = true;
+  cube.position.set(0, 0, 30);
+  scene.add(cube);
 }
 
 function initMap() {
-  const projection = d3geo.geoMercator().center([120.782952, 30.747738]).scale(10000).translate([0, 0])
-  let texture = textureLoader.load(new URL("../assets/map.jpg", import.meta.url).href)
-  NANHU.features.forEach(elem => {
-    const province = new THREE.Object3D()
-    const coordinates = elem.geometry.coordinates
-    coordinates.forEach(multiPolygon => {
-      multiPolygon.forEach(polygon => {
-        const shape = new THREE.Shape()
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff })
-        const lineGeometry = new THREE.Geometry()
+  const projection = d3geo
+    .geoMercator()
+    .center([120.782952, 30.747738])
+    .scale(10000)
+    .translate([0, 0]);
+  let texture = textureLoader.load(
+    new URL("../assets/map.jpg", import.meta.url).href
+  );
+  NANHU.features.forEach((elem) => {
+    const province = new THREE.Object3D();
+    const coordinates = elem.geometry.coordinates;
+    coordinates.forEach((multiPolygon) => {
+      multiPolygon.forEach((polygon) => {
+        const shape = new THREE.Shape();
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+        const lineGeometry = new THREE.Geometry();
         for (let i = 0; i < polygon.length; i++) {
-          const [x, y] = projection(polygon[i])
+          const [x, y] = projection(polygon[i]);
           if (i === 0) {
-            shape.moveTo(x, -y)
+            shape.moveTo(x, -y);
           }
-          shape.lineTo(x, -y)
-          lineGeometry.vertices.push(new THREE.Vector3(x, -y, 1.01))
+          shape.lineTo(x, -y);
+          lineGeometry.vertices.push(new THREE.Vector3(x, -y, 1.01));
         }
         const extrudeSettings = {
           depth: 1,
-          bevelEnabled: false
-        }
+          bevelEnabled: false,
+        };
         const faceMaterial = new THREE.MeshBasicMaterial({
           map: texture,
-          opacity: .4,
-          side: THREE.DoubleSide
-        })
-        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
-        assignUVs(geometry)
-        const material = new THREE.MeshBasicMaterial({ color: '#d13a34', transparent: true, opacity: 0.6 })
-        const mesh = new THREE.Mesh(geometry, [faceMaterial, material, material])
-        const line = new THREE.Line(lineGeometry, lineMaterial)
-        province.add(mesh)
-        province.add(line)
-      })
-    })
-    province.properties = elem.properties
+          opacity: 0.4,
+          side: THREE.DoubleSide,
+        });
+        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        assignUVs(geometry);
+        const material = new THREE.MeshBasicMaterial({
+          color: "#d13a34",
+          transparent: true,
+          opacity: 0.6,
+        });
+        const mesh = new THREE.Mesh(geometry, [
+          faceMaterial,
+          material,
+          material,
+        ]);
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+        province.add(mesh);
+        province.add(line);
+      });
+    });
+    province.properties = elem.properties;
     if (elem.properties.centroid) {
-      const [x, y] = projection(elem.properties.centroid)
-      province.properties._centroid = [x, y]
+      const [x, y] = projection(elem.properties.centroid);
+      province.properties._centroid = [x, y];
     }
-    province.rotation.x = -Math.PI / 2
-    province.position.set(-15, 0, -15)
-    map.add(province)
-  })
-  scene.add(map)
+    province.rotation.x = -Math.PI / 2;
+    province.position.set(-15, 0, -15);
+    map.add(province);
+  });
+  scene.add(map);
 }
 
 function initStats() {
-  document.body.appendChild(stats.dom)
+  document.body.appendChild(stats.dom);
 }
 
 function assignUVs(geometry) {
@@ -484,20 +485,26 @@ function assignUVs(geometry) {
       v2 = geometry.vertices[faces[i].b],
       v3 = geometry.vertices[faces[i].c];
     geometry.faceVertexUvs[0].push([
-      new THREE.Vector2((v1.x + offset.x) / range.x, (v1.y + offset.y) / range.y),
-      new THREE.Vector2((v2.x + offset.x) / range.x, (v2.y + offset.y) / range.y),
-      new THREE.Vector2((v3.x + offset.x) / range.x, (v3.y + offset.y) / range.y)
+      new THREE.Vector2(
+        (v1.x + offset.x) / range.x,
+        (v1.y + offset.y) / range.y
+      ),
+      new THREE.Vector2(
+        (v2.x + offset.x) / range.x,
+        (v2.y + offset.y) / range.y
+      ),
+      new THREE.Vector2(
+        (v3.x + offset.x) / range.x,
+        (v3.y + offset.y) / range.y
+      ),
     ]);
   }
   geometry.uvsNeedUpdate = true;
 }
 
-
-
 function updateData() {
-  const dt = clock.getDelta()
-  ratio.value += dt
-
+  const dt = clock.getDelta();
+  ratio.value += dt;
 }
 
 function initRadar(options) {
@@ -562,14 +569,7 @@ function initRadar(options) {
     }
   `;
 
-  const {
-    position,
-    radius,
-    color,
-    opacity,
-    speed,
-    angle,
-  } = options;
+  const { position, radius, color, opacity, speed, angle } = options;
 
   const size = radius * 2;
 
@@ -581,37 +581,36 @@ function initRadar(options) {
     uniforms: {
       uTime: ratio,
       u_radius: {
-        value: radius
+        value: radius,
       },
       u_speed: {
-        value: speed
+        value: speed,
       },
       u_opacity: {
-        value: opacity
+        value: opacity,
       },
       u_width: {
-        value: angle
+        value: angle,
       },
       u_color: {
-        value: new THREE.Color(color)
+        value: new THREE.Color(color),
       },
-
     },
     vertexShader,
-    fragmentShader
-  })
+    fragmentShader,
+  });
   let planeMesh = new THREE.Mesh(plane, material_1);
   scene.add(planeMesh);
 
-  planeMesh.rotation.x = -0.5 * Math.PI
+  planeMesh.rotation.x = -0.5 * Math.PI;
   planeMesh.position.copy(position);
 }
 
 function animate() {
-  let delta = clock.getDelta()
-  stats.update()
-  updateData()
-  calcHeight()
+  let delta = clock.getDelta();
+  stats.update();
+  updateData();
+  calcHeight();
   renderer.autoClear = false;
   renderer.clear();
   // scene.traverse(darkenNonBloomed); // 隐藏不需要辉光的物体
@@ -623,8 +622,7 @@ function animate() {
   camera.layers.set(0);
   renderer.render(scene, camera);
   // composer.render(delta)
-  requestAnimationFrame(animate)
-
+  requestAnimationFrame(animate);
 }
 </script>
 <style lang="less" scoped>

@@ -7,6 +7,7 @@ import BloomSelective from "@/components/BloomSelective.vue";
 import Layout from "@/components/Layout.vue";
 import Father from "@/components/Father.vue";
 import Cannon from "@/components/Cannon.vue";
+import SvgPage from "@/components/SvgPage.vue";
 const routes = [
   {
     path: "/",
@@ -39,6 +40,10 @@ const routes = [
   {
     path: "/cannon",
     component: Cannon,
+  },
+  {
+    path: "/svgPage",
+    component: SvgPage,
   },
 ];
 
