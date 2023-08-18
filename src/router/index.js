@@ -8,10 +8,15 @@ import Layout from "@/components/Layout.vue";
 import Father from "@/components/Father.vue";
 import Cannon from "@/components/Cannon.vue";
 import SvgPage from "@/components/SvgPage.vue";
+import Svg from "@/components/SVG.vue";
 const routes = [
   {
     path: "/",
     component: Map,
+  },
+  {
+    path: "/svg",
+    component: Svg,
   },
   {
     path: "/light",
