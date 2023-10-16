@@ -9,10 +9,15 @@ import Father from "@/components/Father.vue";
 import Cannon from "@/components/Cannon.vue";
 import SvgPage from "@/components/SvgPage.vue";
 import Svg from "@/components/SVG.vue";
+import CoolEarth from "@/components/CoolEarth.vue";
 const routes = [
   {
     path: "/",
     component: Map,
+  },
+  {
+    path: "/coolearth",
+    component: CoolEarth,
   },
   {
     path: "/svg",
